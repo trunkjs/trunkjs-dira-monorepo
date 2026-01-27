@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/dira-core"
+    },
+    {
+      "path": "./libs/adapter-hono"
+    },
+    {
+      "path": "./demos/hello-world"
+    }
+  ]
+}
