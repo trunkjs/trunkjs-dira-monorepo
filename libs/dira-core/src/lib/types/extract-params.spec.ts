@@ -40,4 +40,17 @@ describe('ExtractParams type', () => {
     expect(params.b).toBe('2');
     expect(params.c).toBe('3');
   });
+
+  test('extracts wildcard parameter', () => {
+    type Result = ExtractParams<'/files/::path'>;
+    const params: Result = { path: 'some/file/path.txt' };
+    expect(params.path).toBe('some/file/path.txt');
+  });
+
+  test('extracts both regular and wildcard parameters', () => {
+    type Result = ExtractParams<'/buckets/:bucket/files/::path'>;
+    const params: Result = { bucket: 'my-bucket', path: 'docs/readme.md' };
+    expect(params.bucket).toBe('my-bucket');
+    expect(params.path).toBe('docs/readme.md');
+  });
 });

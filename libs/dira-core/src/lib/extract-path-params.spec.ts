@@ -70,4 +70,46 @@ describe('extractPathParams', () => {
 
     expect(params).toEqual({ a: 'one', b: 'two', c: 'three' });
   });
+
+  test('extracts wildcard parameter capturing rest of path', () => {
+    const params = extractPathParams(
+      '/files/::path',
+      'http://localhost/files/path/to/file.txt',
+    );
+
+    expect(params).toEqual({ path: 'path/to/file.txt' });
+  });
+
+  test('extracts wildcard parameter with single segment', () => {
+    const params = extractPathParams(
+      '/files/::path',
+      'http://localhost/files/file.txt',
+    );
+
+    expect(params).toEqual({ path: 'file.txt' });
+  });
+
+  test('extracts both regular and wildcard parameters', () => {
+    const params = extractPathParams(
+      '/buckets/:bucket/files/::path',
+      'http://localhost/buckets/my-bucket/files/docs/readme.md',
+    );
+
+    expect(params).toEqual({ bucket: 'my-bucket', path: 'docs/readme.md' });
+  });
+
+  test('decodes URL-encoded segments in wildcard parameter', () => {
+    const params = extractPathParams(
+      '/files/::path',
+      'http://localhost/files/my%20folder/my%20file.txt',
+    );
+
+    expect(params).toEqual({ path: 'my folder/my file.txt' });
+  });
+
+  test('handles empty remaining path for wildcard', () => {
+    const params = extractPathParams('/files/::path', 'http://localhost/files');
+
+    expect(params).toEqual({});
+  });
 });

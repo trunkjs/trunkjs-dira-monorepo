@@ -270,24 +270,18 @@ describe('HTTP Method Binding', () => {
     const dira = new DiraCore();
 
     // Single method binding
-    dira.registerHandler(
-      '/get-only',
-      () => ({ method: 'GET' }),
-      { method: 'GET' },
-    );
+    dira.registerHandler('/get-only', () => ({ method: 'GET' }), {
+      method: 'GET',
+    });
 
-    dira.registerHandler(
-      '/post-only',
-      () => ({ method: 'POST' }),
-      { method: 'POST' },
-    );
+    dira.registerHandler('/post-only', () => ({ method: 'POST' }), {
+      method: 'POST',
+    });
 
     // Multiple method binding
-    dira.registerHandler(
-      '/get-or-post',
-      (req) => ({ method: req.method }),
-      { method: ['GET', 'POST'] },
-    );
+    dira.registerHandler('/get-or-post', (req) => ({ method: req.method }), {
+      method: ['GET', 'POST'],
+    });
 
     // All methods (default - no method specified)
     dira.registerHandler('/any-method', (req) => ({ method: req.method }));
@@ -347,5 +341,77 @@ describe('HTTP Method Binding', () => {
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ method });
     }
+  });
+});
+
+describe('Imperative API with Wildcard Parameters', () => {
+  const PORT = 3027;
+  const BASE_URL = `http://localhost:${PORT}`;
+  let adapter: HonoAdapter;
+
+  beforeAll(async () => {
+    const dira = new DiraCore();
+
+    // Wildcard param captures rest of path
+    dira.registerHandler('/files/::filePath', (req) => {
+      return { filePath: req.params.filePath };
+    });
+
+    // Combining regular and wildcard params
+    dira.registerHandler('/buckets/:bucket/objects/::key', (req) => {
+      return {
+        bucket: req.params.bucket,
+        key: req.params.key,
+      };
+    });
+
+    adapter = new HonoAdapter();
+    await adapter.start(dira['routes'], { port: PORT });
+  });
+
+  afterAll(() => {
+    adapter.stop();
+  });
+
+  test('captures single segment wildcard', async () => {
+    const response = await fetch(`${BASE_URL}/files/readme.txt`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ filePath: 'readme.txt' });
+  });
+
+  test('captures multi-segment wildcard path', async () => {
+    const response = await fetch(`${BASE_URL}/files/path/to/file.txt`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ filePath: 'path/to/file.txt' });
+  });
+
+  test('captures deeply nested wildcard path', async () => {
+    const response = await fetch(`${BASE_URL}/files/a/b/c/d/e/f.txt`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ filePath: 'a/b/c/d/e/f.txt' });
+  });
+
+  test('combines regular and wildcard params', async () => {
+    const response = await fetch(
+      `${BASE_URL}/buckets/my-bucket/objects/path/to/object.json`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      bucket: 'my-bucket',
+      key: 'path/to/object.json',
+    });
+  });
+
+  test('decodes URL-encoded wildcard segments', async () => {
+    const response = await fetch(`${BASE_URL}/files/my%20folder/my%20file.txt`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      filePath: 'my folder/my file.txt',
+    });
   });
 });

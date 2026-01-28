@@ -14,5 +14,7 @@ export * from './lib/create-dira-request';
 export * from './lib/extract-path-params';
 export * from './lib/wrap-response';
 export * from './lib/handler';
+export * from './lib/validate-route';
+export * from './lib/convert-route-for-adapter';
 export type * from './lib/types/extract-params';
 export type * from './lib/types/handler-return';

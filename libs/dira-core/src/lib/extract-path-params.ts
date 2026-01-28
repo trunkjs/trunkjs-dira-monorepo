@@ -1,6 +1,8 @@
 /**
  * Extracts path parameters from a URL by matching against a route pattern.
- * @param pattern - Route pattern with parameters (e.g., "/users/:id/posts/:postId")
+ * Supports regular params (:param) and wildcard params (::param).
+ * Wildcard params capture all remaining path segments.
+ * @param pattern - Route pattern with parameters (e.g., "/users/:id" or "/files/::path")
  * @param url - The actual URL to extract parameters from
  * @returns Object with parameter names as keys and extracted values
  */
@@ -21,6 +23,20 @@ export function extractPathParams(
     const patternSegment = patternSegments[i];
     const pathSegment = pathSegments[i];
 
+    // Wildcard parameter (::paramName) - captures remaining path
+    if (patternSegment.startsWith('::')) {
+      const paramName = patternSegment.slice(2);
+      const remainingSegments = pathSegments.slice(i);
+      if (remainingSegments.length > 0) {
+        // Join remaining segments and decode each one
+        params[paramName] = remainingSegments
+          .map((s) => decodeURIComponent(s))
+          .join('/');
+      }
+      break; // Wildcard consumes rest of path
+    }
+
+    // Regular parameter (:paramName)
     if (patternSegment.startsWith(':')) {
       const paramName = patternSegment.slice(1);
       if (pathSegment !== undefined) {

@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import type { ControllerMetadata } from './controller-metadata';
+import { convertRouteForAdapter } from './convert-route-for-adapter';
 import { createDiraRequest } from './create-dira-request';
 import type { DiraAdapter } from './dira-adapter';
 import type { DiraAdapterOptions } from './dira-adapter-options';
@@ -12,6 +13,7 @@ import { isHandlerWrapper } from './handler';
 import type { HttpMethod } from './http-method';
 import type { DiraHandler, HttpHandler } from './http-handler';
 import type { RouteRegistration } from './route-registration';
+import { validateRoute } from './validate-route';
 import { wrapResponse } from './wrap-response';
 
 /** Core framework class for registering HTTP handlers and running the server. */
@@ -33,7 +35,7 @@ export class DiraCore {
 
   /**
    * Registers a type-safe handler with auto-inferred path parameters.
-   * @param route - Route pattern with parameters (e.g., "/users/:id")
+   * @param route - Route pattern with parameters (e.g., "/users/:id" or "/files/::path")
    * @param handler - Handler function receiving DiraRequest with typed params
    * @param options - Optional configuration including HTTP methods
    */
@@ -42,13 +44,15 @@ export class DiraCore {
     handler: DiraHandler<TRoute>,
     options?: { method?: HttpMethod | HttpMethod[] },
   ): this {
+    validateRoute(route);
     const wrappedHandler = this.wrapHandler(route, handler);
+    const adapterRoute = convertRouteForAdapter(route);
     const methods = options?.method
       ? Array.isArray(options.method)
         ? options.method
         : [options.method]
       : undefined;
-    this.routes.push({ route, handler: wrappedHandler, methods });
+    this.routes.push({ route: adapterRoute, handler: wrappedHandler, methods });
     return this;
   }
 
@@ -83,9 +87,11 @@ export class DiraCore {
       }
 
       const fullRoute = prefix + route;
+      validateRoute(fullRoute);
       const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
+      const adapterRoute = convertRouteForAdapter(fullRoute);
       this.routes.push({
-        route: fullRoute,
+        route: adapterRoute,
         handler: wrappedHandler,
         methods: httpMethods,
       });
