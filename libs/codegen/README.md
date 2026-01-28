@@ -69,12 +69,43 @@ The `options` parameter accepts:
 
 ## Options
 
-| Option            | Type               | Description                                       |
-| ----------------- | ------------------ | ------------------------------------------------- |
-| `controllerGlobs` | `string[]`         | Directories, file paths, or glob patterns         |
-| `tsconfig`        | `string`           | Path to `tsconfig.json`                           |
-| `outFile`         | `string?`          | If set, writes the generated code to this path    |
-| `fileOptions`     | `DiscoverOptions?` | Override include/exclude extensions and recursion |
+| Option            | Type               | Description                                                      |
+| ----------------- | ------------------ | ---------------------------------------------------------------- |
+| `controllerGlobs` | `string[]`         | Directories, file paths, or glob patterns                        |
+| `tsconfig`        | `string`           | Path to `tsconfig.json`                                          |
+| `outFile`         | `string?`          | If set, writes the generated code to this path                   |
+| `fileOptions`     | `DiscoverOptions?` | Override include/exclude extensions and recursion                |
+| `clientName`      | `string?`          | Name for the generated client interface (defaults to DiraClient) |
+
+### Using multiple API clients
+
+When consuming multiple APIs, use `clientName` to generate distinct client interfaces:
+
+```typescript
+// Generate clients for different APIs
+generateClient({
+  controllerGlobs: ['./api-users/controllers'],
+  tsconfig: './tsconfig.json',
+  outFile: './generated/users-client.ts',
+  clientName: 'UsersApiClient',
+});
+
+generateClient({
+  controllerGlobs: ['./api-orders/controllers'],
+  tsconfig: './tsconfig.json',
+  outFile: './generated/orders-client.ts',
+  clientName: 'OrdersApiClient',
+});
+```
+
+```typescript
+// Use both clients in the same application
+import { createClient as createUsersClient } from './generated/users-client';
+import { createClient as createOrdersClient } from './generated/orders-client';
+
+const usersApi = createUsersClient('https://users.example.com');
+const ordersApi = createOrdersClient('https://orders.example.com');
+```
 
 ## Running tests
 

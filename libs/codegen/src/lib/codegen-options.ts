@@ -9,4 +9,6 @@ export interface CodegenOptions {
   outFile?: string;
   /** File discovery options (include/exclude extensions, recursive). Uses dira-core defaults if omitted. */
   fileOptions?: DiscoverOptions;
+  /** Name for the generated client interface (e.g., "MyApiClient"). Defaults to "DiraClient". */
+  clientName?: string;
 }

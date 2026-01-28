@@ -12,7 +12,7 @@ import { resolveFiles } from './resolve-files';
 export function generateClient(options: CodegenOptions): string {
   const files = resolveFiles(options.controllerGlobs, options.fileOptions);
   const routes = analyzeControllers(files, resolve(options.tsconfig));
-  const code = generateClientCode(routes);
+  const code = generateClientCode(routes, { clientName: options.clientName });
 
   if (options.outFile) {
     writeFileSync(resolve(options.outFile), code, 'utf-8');

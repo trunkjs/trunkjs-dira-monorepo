@@ -1,12 +1,22 @@
 import type { ExtractedRoute } from './extracted-route';
 
 const DEFAULT_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+const DEFAULT_CLIENT_NAME = 'DiraClient';
+
+export interface GenerateClientCodeOptions {
+  /** Name for the generated client interface (e.g., "MyApiClient"). Defaults to "DiraClient". */
+  clientName?: string;
+}
 
 /**
  * Generates a self-contained TypeScript client file from extracted route metadata.
  * The output includes runtime helpers, typed interfaces, and a `createClient` factory.
  */
-export function generateClientCode(routes: ExtractedRoute[]): string {
+export function generateClientCode(
+  routes: ExtractedRoute[],
+  options?: GenerateClientCodeOptions,
+): string {
+  const clientName = options?.clientName || DEFAULT_CLIENT_NAME;
   const lines: string[] = [];
 
   // Runtime types and helpers
@@ -88,7 +98,7 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
   }
 
   // Generate client type
-  lines.push(`export interface DiraClient {`);
+  lines.push(`export interface ${clientName} {`);
   for (const [controllerName, controllerRoutes] of byController) {
     const segments = controllerName.includes('.')
       ? controllerName.split('.')
@@ -100,7 +110,7 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
 
   // Generate createClient
   lines.push(
-    `export function createClient(baseUrl: string, options?: ClientOptions): DiraClient {`,
+    `export function createClient(baseUrl: string, options?: ClientOptions): ${clientName} {`,
   );
   lines.push(`  const fetchFn = options?.fetch ?? fetch;`);
   lines.push(`  return {`);

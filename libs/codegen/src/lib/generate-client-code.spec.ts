@@ -125,4 +125,17 @@ describe('generateClientCode', () => {
     expect(code).toContain('encodeURIComponent');
     expect(code).toContain('URLSearchParams');
   });
+
+  it('should use default DiraClient name when clientName not provided', () => {
+    const code = generateClientCode([]);
+    expect(code).toContain('export interface DiraClient');
+    expect(code).toContain('): DiraClient {');
+  });
+
+  it('should use custom client name when provided', () => {
+    const code = generateClientCode([], { clientName: 'MyApiClient' });
+    expect(code).toContain('export interface MyApiClient');
+    expect(code).toContain('): MyApiClient {');
+    expect(code).not.toContain('DiraClient');
+  });
 });
