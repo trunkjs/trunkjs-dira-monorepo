@@ -162,4 +162,34 @@ describe('generateClientCode', () => {
     expect(code).toContain('): MyApiClient {');
     expect(code).not.toContain('DiraClient');
   });
+
+  it('should handle wildcard params (::key) separately from regular params (:key)', () => {
+    const code = generateClientCode([
+      makeRoute({
+        fullRoute: '/files/::path',
+        pathParams: ['path'],
+      }),
+    ]);
+    // Should include check for wildcard params
+    expect(code).toContain("if (url.includes('::' + key))");
+    // Should encode each segment but preserve slashes for wildcards
+    expect(code).toContain("value.split('/').map(s => encodeURIComponent(s)).join('/')");
+    // Should replace ::key for wildcards
+    expect(code).toContain("url.replace('::' + key, encoded)");
+    // Should still handle regular :key params
+    expect(code).toContain('url.replace(`:${key}`, encodeURIComponent(value))');
+  });
+
+  it('should handle mixed regular and wildcard params in the same route', () => {
+    const code = generateClientCode([
+      makeRoute({
+        fullRoute: '/repos/:owner/:repo/files/::path',
+        pathParams: ['owner', 'repo', 'path'],
+      }),
+    ]);
+    // Should require all params
+    expect(code).toContain('params: { owner: string; repo: string; path: string }');
+    // Route should be in the routes map
+    expect(code).toContain("path: '/repos/:owner/:repo/files/::path'");
+  });
 });

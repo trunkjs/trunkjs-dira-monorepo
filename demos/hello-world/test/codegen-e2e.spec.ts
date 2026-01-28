@@ -240,4 +240,64 @@ describe('Codegen E2E', () => {
     const nonExistent = (api as any).nonexistent.handler.$route;
     expect(nonExistent).toBeUndefined();
   });
+
+  test('GET with wildcard param (files controller)', async () => {
+    const api = createClient(BASE_URL);
+    const res = await api.files.getFileByPath.$get({
+      params: { filePath: 'path/to/file.txt' },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.filePath).toBe('path/to/file.txt');
+  });
+
+  test('GET with wildcard param containing special characters', async () => {
+    const api = createClient(BASE_URL);
+    const res = await api.files.getFileByPath.$get({
+      params: { filePath: 'path/to/file with spaces.txt' },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.filePath).toBe('path/to/file with spaces.txt');
+  });
+
+  test('GET with mixed regular and wildcard params', async () => {
+    const api = createClient(BASE_URL);
+    const res = await api.files.getRepoFile.$get({
+      params: { owner: 'my-org', repo: 'my-repo', path: 'src/lib/utils.ts' },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.owner).toBe('my-org');
+    expect(data.repo).toBe('my-repo');
+    expect(data.path).toBe('src/lib/utils.ts');
+  });
+
+  test('GET with mixed params and special characters in wildcard', async () => {
+    const api = createClient(BASE_URL);
+    const res = await api.files.getRepoFile.$get({
+      params: {
+        owner: 'acme-corp',
+        repo: 'web-app',
+        path: 'src/components/Button Component/index.tsx',
+      },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.owner).toBe('acme-corp');
+    expect(data.repo).toBe('web-app');
+    expect(data.path).toBe('src/components/Button Component/index.tsx');
+  });
+
+  test('wildcard param $route metadata is correct', () => {
+    const api = createClient(BASE_URL);
+
+    const fileRoute = api.files.getFileByPath.$route;
+    expect(fileRoute).toBeDefined();
+    expect(fileRoute.path).toBe('/files/::filePath');
+
+    const repoFileRoute = api.files.getRepoFile.$route;
+    expect(repoFileRoute).toBeDefined();
+    expect(repoFileRoute.path).toBe('/files/repos/:owner/:repo/::path');
+  });
 });
