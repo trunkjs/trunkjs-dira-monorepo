@@ -89,7 +89,9 @@ export class PostsController {
     };
   }
 
-  @DiraHttp('/metadata')
+  @DiraHttp('/metadata', {
+    method: 'GET'
+  })
   getMetadata(req: DiraRequest) {
     return {
       method: req.method,

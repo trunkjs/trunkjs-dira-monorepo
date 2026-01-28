@@ -28,6 +28,19 @@ const res = await api.posts.createPost.$post({
 const data = await res.json(); // typed as { id: string; title: string; ... }
 ```
 
+### Custom fetch implementation
+
+You can provide a custom `fetch` implementation via the `options` parameter. This is useful for testing, adding interceptors, or using libraries like `node-fetch`:
+
+```typescript
+import { createClient } from './generated/client';
+
+// Use a custom fetch (e.g., for testing with mocks)
+const api = createClient('http://localhost:3000', {
+  fetch: myCustomFetch,
+});
+```
+
 ## How it works
 
 1. **File discovery** — `resolveFiles` accepts directories, file paths, or globs and collects `.ts` files (respecting `DiscoverOptions` from `@dira/dira-core`)
@@ -37,13 +50,17 @@ const data = await res.json(); // typed as { id: string; title: string; ... }
 ## Generated client shape
 
 ```
-createClient(baseUrl)
+createClient(baseUrl, options?)
   └─ controllerName
        └─ handlerName
             └─ $get / $post / $put / $patch / $delete
                  └─ (options?: { body?, query?, params?, headers? })
                       └─ Promise<TypedResponse<TReturn>>
 ```
+
+The `options` parameter accepts:
+
+- `fetch?: typeof fetch` — Custom fetch implementation (defaults to global `fetch`)
 
 - Path parameters are substituted from `params`
 - Query parameters are serialized to the URL search string

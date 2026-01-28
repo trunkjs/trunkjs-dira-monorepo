@@ -16,6 +16,10 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
   lines.push(`  json(): Promise<T>;`);
   lines.push(`}`);
   lines.push('');
+  lines.push(`export interface ClientOptions {`);
+  lines.push(`  fetch?: typeof fetch;`);
+  lines.push(`}`);
+  lines.push('');
   lines.push(
     `interface RequestOptions<TBody = never, TQuery = never, TParams = never> {`,
   );
@@ -28,6 +32,7 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
 
   // Internal request function
   lines.push(`function request(`);
+  lines.push(`  fetchFn: typeof fetch,`);
   lines.push(`  baseUrl: string,`);
   lines.push(`  method: string,`);
   lines.push(`  path: string,`);
@@ -69,7 +74,7 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
   );
   lines.push(`  }`);
   lines.push(
-    `  return fetch(fullUrl, init) as Promise<TypedResponse<unknown>>;`,
+    `  return fetchFn(fullUrl, init) as Promise<TypedResponse<unknown>>;`,
   );
   lines.push(`}`);
   lines.push('');
@@ -94,15 +99,16 @@ export function generateClientCode(routes: ExtractedRoute[]): string {
   lines.push('');
 
   // Generate createClient
-  lines.push(`export function createClient(baseUrl: string): DiraClient {`);
+  lines.push(
+    `export function createClient(baseUrl: string, options?: ClientOptions): DiraClient {`,
+  );
+  lines.push(`  const fetchFn = options?.fetch ?? fetch;`);
   lines.push(`  return {`);
   for (const [controllerName, controllerRoutes] of byController) {
     const segments = controllerName.includes('.')
       ? controllerName.split('.')
       : [controllerName];
-    lines.push(
-      ...generateNestedObject(segments, controllerRoutes, 2, 'baseUrl'),
-    );
+    lines.push(...generateNestedObject(segments, controllerRoutes, 2));
   }
   lines.push(`  };`);
   lines.push(`}`);
@@ -157,7 +163,6 @@ function generateNestedObject(
   segments: string[],
   routes: ExtractedRoute[],
   indent: number,
-  baseUrlVar: string,
 ): string[] {
   const pad = '  '.repeat(indent);
   const lines: string[] = [];
@@ -165,30 +170,19 @@ function generateNestedObject(
   if (segments.length === 1) {
     lines.push(`${pad}${segments[0]}: {`);
     for (const route of routes) {
-      lines.push(...generateHandlerImpl(route, indent + 1, baseUrlVar));
+      lines.push(...generateHandlerImpl(route, indent + 1));
     }
     lines.push(`${pad}},`);
   } else {
     lines.push(`${pad}${segments[0]}: {`);
-    lines.push(
-      ...generateNestedObject(
-        segments.slice(1),
-        routes,
-        indent + 1,
-        baseUrlVar,
-      ),
-    );
+    lines.push(...generateNestedObject(segments.slice(1), routes, indent + 1));
     lines.push(`${pad}},`);
   }
 
   return lines;
 }
 
-function generateHandlerImpl(
-  route: ExtractedRoute,
-  indent: number,
-  baseUrlVar: string,
-): string[] {
+function generateHandlerImpl(route: ExtractedRoute, indent: number): string[] {
   const pad = '  '.repeat(indent);
   const lines: string[] = [];
   const methods = route.httpMethods ?? [...DEFAULT_METHODS];
@@ -197,7 +191,7 @@ function generateHandlerImpl(
   for (const method of methods) {
     const m = method.toLowerCase();
     lines.push(
-      `${pad}  $${m}: (options?: any) => request(${baseUrlVar}, '${method}', '${route.fullRoute}', options) as any,`,
+      `${pad}  $${m}: (options?: any) => request(fetchFn, baseUrl, '${method}', '${route.fullRoute}', options) as any,`,
     );
   }
   lines.push(`${pad}},`);

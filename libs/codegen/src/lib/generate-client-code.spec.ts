@@ -30,11 +30,13 @@ describe('generateClientCode', () => {
     expect(code).toContain('json(): Promise<T>');
   });
 
-  it('should export createClient function', () => {
+  it('should export createClient function with optional ClientOptions', () => {
     const code = generateClientCode([]);
     expect(code).toContain(
-      'export function createClient(baseUrl: string): DiraClient',
+      'export function createClient(baseUrl: string, options?: ClientOptions): DiraClient',
     );
+    expect(code).toContain('export interface ClientOptions');
+    expect(code).toContain('fetch?: typeof fetch');
   });
 
   it('should generate handler with $method', () => {

@@ -88,16 +88,13 @@ describe('PostsController', () => {
 
   test('provides access to request metadata', async () => {
     const response = await fetch(`${BASE_URL}/posts/metadata`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      method: 'GET',
     });
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.method).toBe('POST');
+    expect(data.method).toBe('GET');
     expect(data.url).toContain('/posts/metadata');
-    expect(data.contentType).toBe('application/json');
   });
 
   test('provides raw request access via metadata', async () => {
