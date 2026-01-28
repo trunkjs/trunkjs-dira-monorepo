@@ -1,28 +1,27 @@
-import { DiraController, DiraHttp } from '@dira/dira-core';
-import type { DiraRequest, ExtractParams } from '@dira/dira-core';
+import { DiraController, DiraHttp, handler } from '@dira/dira-core';
 
 @DiraController('/users')
 export class UsersController {
-  @DiraHttp('/:id')
-  getUser(req: DiraRequest<unknown, {}, ExtractParams<'/:id'>>) {
+  @DiraHttp()
+  getUser = handler('/:id', (req) => {
+    // req.params.id is automatically typed as string!
     return { userId: req.params.id };
-  }
+  });
 
-  @DiraHttp('/:userId/posts/:postId')
-  getUserPost(
-    req: DiraRequest<unknown, {}, ExtractParams<'/:userId/posts/:postId'>>,
-  ) {
+  @DiraHttp()
+  getUserPost = handler('/:userId/posts/:postId', (req) => {
+    // Both params are typed!
     return {
       userId: req.params.userId,
       postId: req.params.postId,
     };
-  }
+  });
 
-  @DiraHttp('/:id/profile')
-  getProfile(req: DiraRequest<unknown, {}, ExtractParams<'/:id/profile'>>) {
+  @DiraHttp()
+  getProfile = handler('/:id/profile', (req) => {
     return {
       userId: req.params.id,
       profile: { name: 'Test User', email: 'test@example.com' },
     };
-  }
+  });
 }

@@ -4,10 +4,11 @@ import { createDiraRequest } from './create-dira-request';
 import type { DiraAdapter } from './dira-adapter';
 import type { DiraAdapterOptions } from './dira-adapter-options';
 import { CONTROLLER_PREFIX } from './dira-controller';
-import { HTTP_ROUTES } from './dira-http';
+import { HTTP_ROUTES, ROUTE_FROM_HANDLER } from './dira-http';
 import { discoverControllers } from './discover-controllers';
 import type { DiscoverOptions } from './discover-options';
 import { extractPathParams } from './extract-path-params';
+import { isHandlerWrapper } from './handler';
 import type { DiraHandler, HttpHandler } from './http-handler';
 import type { RouteRegistration } from './route-registration';
 import { wrapResponse } from './wrap-response';
@@ -53,11 +54,27 @@ export class DiraCore {
     const routes: ControllerMetadata[] =
       Reflect.getMetadata(HTTP_ROUTES, controller.constructor) || [];
 
-    for (const { route, method } of routes) {
+    for (const { route: metadataRoute, method } of routes) {
+      const property = (controller as Record<string, unknown>)[method];
+
+      let route: string;
+      let originalHandler: Function;
+
+      // Check if this is a handler() wrapper
+      if (isHandlerWrapper(property)) {
+        route = property.route;
+        originalHandler = property.handler;
+      } else if (metadataRoute === (ROUTE_FROM_HANDLER as unknown)) {
+        throw new Error(
+          `@DiraHttp() on "${method}" requires handler() wrapper. ` +
+            `Use @DiraHttp('/route') or wrap with handler('/route', fn).`,
+        );
+      } else {
+        route = metadataRoute;
+        originalHandler = (property as Function).bind(controller);
+      }
+
       const fullRoute = prefix + route;
-      const originalHandler = (controller as Record<string, Function>)[
-        method
-      ].bind(controller);
       const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
       this.routes.push({ route: fullRoute, handler: wrappedHandler });
     }

@@ -3,6 +3,7 @@ import type { DiraRequest } from './dira-request';
 import { DiraController } from './dira-controller';
 import { DiraCore } from './dira-core';
 import { DiraHttp } from './dira-http';
+import { handler } from './handler';
 
 describe('DiraCore', () => {
   describe('registerController', () => {
@@ -112,6 +113,87 @@ describe('DiraCore', () => {
       );
 
       expect(response.status).toBe(204);
+    });
+
+    test('supports handler() wrapper with @DiraHttp()', async () => {
+      @DiraController('/api')
+      class TestController {
+        @DiraHttp()
+        getUser = handler('/:id', (req) => {
+          return { userId: req.params.id };
+        });
+      }
+
+      const dira = new DiraCore();
+      dira.registerController(new TestController());
+
+      const routes = dira['routes'];
+      expect(routes).toHaveLength(1);
+      expect(routes[0].route).toBe('/api/:id');
+
+      const response = await routes[0].handler(
+        new Request('http://localhost/api/123'),
+      );
+      expect(await response.json()).toEqual({ userId: '123' });
+    });
+
+    test('supports handler() with multiple path params', async () => {
+      @DiraController('/users')
+      class TestController {
+        @DiraHttp()
+        getPost = handler('/:userId/posts/:postId', (req) => {
+          return {
+            userId: req.params.userId,
+            postId: req.params.postId,
+          };
+        });
+      }
+
+      const dira = new DiraCore();
+      dira.registerController(new TestController());
+
+      const response = await dira['routes'][0].handler(
+        new Request('http://localhost/users/42/posts/99'),
+      );
+      expect(await response.json()).toEqual({ userId: '42', postId: '99' });
+    });
+
+    test('supports mixing handler() and explicit @DiraHttp(route)', async () => {
+      @DiraController('/api')
+      class TestController {
+        @DiraHttp('/explicit')
+        explicit() {
+          return { type: 'explicit' };
+        }
+
+        @DiraHttp()
+        wrapped = handler('/wrapped/:id', (req) => {
+          return { type: 'wrapped', id: req.params.id };
+        });
+      }
+
+      const dira = new DiraCore();
+      dira.registerController(new TestController());
+
+      const routes = dira['routes'];
+      expect(routes).toHaveLength(2);
+      expect(routes[0].route).toBe('/api/explicit');
+      expect(routes[1].route).toBe('/api/wrapped/:id');
+    });
+
+    test('throws error when @DiraHttp() used without handler()', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp()
+        invalid() {
+          return {};
+        }
+      }
+
+      const dira = new DiraCore();
+      expect(() => dira.registerController(new TestController())).toThrow(
+        /@DiraHttp\(\) on "invalid" requires handler\(\) wrapper/,
+      );
     });
   });
 

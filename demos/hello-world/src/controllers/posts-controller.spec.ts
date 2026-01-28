@@ -109,4 +109,50 @@ describe('PostsController', () => {
     const data = await response.json();
     expect(data.method).toBe('GET');
   });
+
+  test('handles path params, query params, and body together', async () => {
+    const response = await fetch(
+      `${BASE_URL}/posts/user-42/posts/post-99/publish?draft=true&preview=false`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduledAt: '2024-12-25T10:00:00Z',
+          notifySubscribers: true,
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      authorId: 'user-42',
+      postId: 'post-99',
+      scheduledAt: '2024-12-25T10:00:00Z',
+      notifySubscribers: true,
+      isDraft: true,
+      isPreview: false,
+    });
+  });
+
+  test('handles missing optional query params', async () => {
+    const response = await fetch(
+      `${BASE_URL}/posts/author-1/posts/post-1/publish`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notifySubscribers: false,
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.authorId).toBe('author-1');
+    expect(data.postId).toBe('post-1');
+    expect(data.scheduledAt).toBeNull();
+    expect(data.notifySubscribers).toBe(false);
+    expect(data.isDraft).toBe(false);
+    expect(data.isPreview).toBe(false);
+  });
 });

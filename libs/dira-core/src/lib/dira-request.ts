@@ -6,10 +6,7 @@
  */
 export interface DiraRequest<
   TBody = unknown,
-  TQuery extends Record<string, string | string[]> = Record<
-    string,
-    string | string[]
-  >,
+  TQuery = Record<string, string | string[] | undefined>,
   TParams extends Record<string, string> = Record<string, string>,
 > {
   /** Original Request object for advanced use cases. */
