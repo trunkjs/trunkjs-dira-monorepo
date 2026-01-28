@@ -173,4 +173,71 @@ describe('Codegen E2E', () => {
     expect(data.method).toBe('GET');
     expect(data.url).toContain('/posts/metadata');
   });
+
+  test('$routes exposes all route metadata', () => {
+    const api = createClient(BASE_URL);
+    const routes = api.$routes;
+
+    expect(routes).toBeDefined();
+    expect(typeof routes).toBe('object');
+
+    // Check specific routes exist
+    expect(routes['posts.createPost']).toBeDefined();
+    expect(routes['users.getUser']).toBeDefined();
+    expect(routes['methods.getOnly']).toBeDefined();
+
+    // Verify route structure
+    expect(routes['posts.createPost'].path).toBe('/posts/create');
+    expect(routes['users.getUser'].path).toBe('/users/:id');
+    expect(routes['methods.deleteItem'].path).toBe('/methods/:id/delete');
+  });
+
+  test('$routes contains correct HTTP methods', () => {
+    const api = createClient(BASE_URL);
+    const routes = api.$routes;
+
+    // Single method routes
+    expect(routes['methods.getOnly'].methods).toEqual(['GET']);
+    expect(routes['methods.postOnly'].methods).toEqual(['POST']);
+    expect(routes['methods.deleteItem'].methods).toEqual(['DELETE']);
+
+    // Multiple methods
+    expect(routes['methods.multiple'].methods).toEqual(['GET', 'POST', 'PUT']);
+  });
+
+  test('$route exposes individual handler metadata', () => {
+    const api = createClient(BASE_URL);
+
+    // Access $route on different handlers
+    const createPostRoute = api.posts.createPost.$route;
+    expect(createPostRoute).toBeDefined();
+    expect(createPostRoute.path).toBe('/posts/create');
+    expect(Array.isArray(createPostRoute.methods)).toBe(true);
+
+    const getUserRoute = api.users.getUser.$route;
+    expect(getUserRoute).toBeDefined();
+    expect(getUserRoute.path).toBe('/users/:id');
+
+    const deleteItemRoute = api.methods.deleteItem.$route;
+    expect(deleteItemRoute).toBeDefined();
+    expect(deleteItemRoute.path).toBe('/methods/:id/delete');
+    expect(deleteItemRoute.methods).toEqual(['DELETE']);
+  });
+
+  test('$route matches corresponding $routes entry', () => {
+    const api = createClient(BASE_URL);
+
+    // Verify $route and $routes return the same object
+    expect(api.posts.createPost.$route).toBe(api.$routes['posts.createPost']);
+    expect(api.users.getUser.$route).toBe(api.$routes['users.getUser']);
+    expect(api.methods.getOnly.$route).toBe(api.$routes['methods.getOnly']);
+  });
+
+  test('$route returns undefined for non-existent handlers', () => {
+    const api = createClient(BASE_URL);
+
+    // Accessing $route on a non-existent path should return undefined
+    const nonExistent = (api as any).nonexistent.handler.$route;
+    expect(nonExistent).toBeUndefined();
+  });
 });

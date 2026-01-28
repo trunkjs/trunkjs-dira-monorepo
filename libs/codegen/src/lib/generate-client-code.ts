@@ -31,6 +31,11 @@ export function generateClientCode(
   lines.push(`  fetch?: typeof fetch;`);
   lines.push(`}`);
   lines.push('');
+  lines.push(`export interface RouteMetadata {`);
+  lines.push(`  path: string;`);
+  lines.push(`  methods: string[];`);
+  lines.push(`}`);
+  lines.push('');
   lines.push(
     `interface RequestOptions<TBody = never, TQuery = never, TParams = never> {`,
   );
@@ -91,9 +96,7 @@ export function generateClientCode(
   lines.push('');
 
   // Generate route map
-  lines.push(
-    `const routes: Record<string, { path: string; methods: string[] }> = {`,
-  );
+  lines.push(`const routes: Record<string, RouteMetadata> = {`);
   for (const route of routes) {
     const key = `${route.controllerName}.${route.handlerName}`;
     const methods = route.httpMethods ?? [...DEFAULT_METHODS];
@@ -114,6 +117,8 @@ export function generateClientCode(
 
   // Generate client type
   lines.push(`export interface ${clientName} {`);
+  lines.push(`  /** Route metadata for all endpoints */`);
+  lines.push(`  $routes: Record<string, RouteMetadata>;`);
   for (const [controllerName, controllerRoutes] of byController) {
     const segments = controllerName.includes('.')
       ? controllerName.split('.')
@@ -132,6 +137,10 @@ export function generateClientCode(
   lines.push(`  function createProxy(pathParts: string[]): unknown {`);
   lines.push(`    return new Proxy(() => {}, {`);
   lines.push(`      get(_, prop: string) {`);
+  lines.push(`        if (prop === '$routes') return routes;`);
+  lines.push(
+    `        if (prop === '$route') return routes[pathParts.join('.')];`,
+  );
   lines.push(`        if (prop.startsWith('$')) {`);
   lines.push(`          const method = prop.slice(1).toUpperCase();`);
   lines.push(`          const routeKey = pathParts.join('.');`);
@@ -183,6 +192,7 @@ function generateHandlerType(route: ExtractedRoute, indent: number): string[] {
   const methods = route.httpMethods ?? [...DEFAULT_METHODS];
 
   lines.push(`${pad}${route.handlerName}: {`);
+  lines.push(`${pad}  $route: RouteMetadata;`);
   for (const method of methods) {
     const m = method.toLowerCase();
     const optionsType = buildOptionsType(route);

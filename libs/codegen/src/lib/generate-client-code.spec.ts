@@ -135,6 +135,21 @@ describe('generateClientCode', () => {
     expect(code).toContain('const routes:');
   });
 
+  it('should expose $routes metadata on client interface', () => {
+    const code = generateClientCode([makeRoute()]);
+    expect(code).toContain('$routes: Record<string, RouteMetadata>');
+    expect(code).toContain('export interface RouteMetadata');
+    expect(code).toContain("if (prop === '$routes') return routes");
+  });
+
+  it('should expose $route metadata on each handler', () => {
+    const code = generateClientCode([makeRoute()]);
+    expect(code).toContain('$route: RouteMetadata;');
+    expect(code).toContain(
+      "if (prop === '$route') return routes[pathParts.join('.')]",
+    );
+  });
+
   it('should use default DiraClient name when clientName not provided', () => {
     const code = generateClientCode([]);
     expect(code).toContain('export interface DiraClient');

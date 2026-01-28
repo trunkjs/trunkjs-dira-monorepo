@@ -41,6 +41,28 @@ const api = createClient('http://localhost:3000', {
 });
 ```
 
+### Accessing route metadata
+
+The client exposes route metadata for cases where you need access to the underlying URL patterns:
+
+```typescript
+import { createClient } from './generated/client';
+
+const api = createClient('http://localhost:3000');
+
+// Access individual route metadata via $route
+const route = api.users.getUser.$route;
+// { path: '/users/:id', methods: ['GET'] }
+
+// Access all routes via $routes
+console.log(api.$routes);
+// {
+//   'posts.createPost': { path: '/posts/create', methods: ['POST'] },
+//   'users.getUser': { path: '/users/:id', methods: ['GET'] },
+//   ...
+// }
+```
+
 ## How it works
 
 1. **File discovery** — `resolveFiles` accepts directories, file paths, or globs and collects `.ts` files (respecting `DiscoverOptions` from `@dira/dira-core`)
