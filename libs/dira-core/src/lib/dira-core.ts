@@ -9,6 +9,7 @@ import { discoverControllers } from './discover-controllers';
 import type { DiscoverOptions } from './discover-options';
 import { extractPathParams } from './extract-path-params';
 import { isHandlerWrapper } from './handler';
+import type { HttpMethod } from './http-method';
 import type { DiraHandler, HttpHandler } from './http-handler';
 import type { RouteRegistration } from './route-registration';
 import { wrapResponse } from './wrap-response';
@@ -34,13 +35,20 @@ export class DiraCore {
    * Registers a type-safe handler with auto-inferred path parameters.
    * @param route - Route pattern with parameters (e.g., "/users/:id")
    * @param handler - Handler function receiving DiraRequest with typed params
+   * @param options - Optional configuration including HTTP methods
    */
   registerHandler<TRoute extends string>(
     route: TRoute,
     handler: DiraHandler<TRoute>,
+    options?: { method?: HttpMethod | HttpMethod[] },
   ): this {
     const wrappedHandler = this.wrapHandler(route, handler);
-    this.routes.push({ route, handler: wrappedHandler });
+    const methods = options?.method
+      ? Array.isArray(options.method)
+        ? options.method
+        : [options.method]
+      : undefined;
+    this.routes.push({ route, handler: wrappedHandler, methods });
     return this;
   }
 
@@ -54,7 +62,7 @@ export class DiraCore {
     const routes: ControllerMetadata[] =
       Reflect.getMetadata(HTTP_ROUTES, controller.constructor) || [];
 
-    for (const { route: metadataRoute, method } of routes) {
+    for (const { route: metadataRoute, method, httpMethods } of routes) {
       const property = (controller as Record<string, unknown>)[method];
 
       let route: string;
@@ -76,7 +84,11 @@ export class DiraCore {
 
       const fullRoute = prefix + route;
       const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
-      this.routes.push({ route: fullRoute, handler: wrappedHandler });
+      this.routes.push({
+        route: fullRoute,
+        handler: wrappedHandler,
+        methods: httpMethods,
+      });
     }
     return this;
   }

@@ -260,3 +260,92 @@ describe('Imperative API with Path Parameters', () => {
     expect(await response.json()).toEqual({ itemId: 'hello/world' });
   });
 });
+
+describe('HTTP Method Binding', () => {
+  const PORT = 3024;
+  const BASE_URL = `http://localhost:${PORT}`;
+  let adapter: HonoAdapter;
+
+  beforeAll(async () => {
+    const dira = new DiraCore();
+
+    // Single method binding
+    dira.registerHandler(
+      '/get-only',
+      () => ({ method: 'GET' }),
+      { method: 'GET' },
+    );
+
+    dira.registerHandler(
+      '/post-only',
+      () => ({ method: 'POST' }),
+      { method: 'POST' },
+    );
+
+    // Multiple method binding
+    dira.registerHandler(
+      '/get-or-post',
+      (req) => ({ method: req.method }),
+      { method: ['GET', 'POST'] },
+    );
+
+    // All methods (default - no method specified)
+    dira.registerHandler('/any-method', (req) => ({ method: req.method }));
+
+    adapter = new HonoAdapter();
+    await adapter.start(dira['routes'], { port: PORT });
+  });
+
+  afterAll(() => {
+    adapter.stop();
+  });
+
+  test('GET-only handler responds to GET', async () => {
+    const response = await fetch(`${BASE_URL}/get-only`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ method: 'GET' });
+  });
+
+  test('GET-only handler rejects POST', async () => {
+    const response = await fetch(`${BASE_URL}/get-only`, { method: 'POST' });
+    expect(response.status).toBe(405);
+  });
+
+  test('POST-only handler responds to POST', async () => {
+    const response = await fetch(`${BASE_URL}/post-only`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ method: 'POST' });
+  });
+
+  test('POST-only handler rejects GET', async () => {
+    const response = await fetch(`${BASE_URL}/post-only`);
+    expect(response.status).toBe(405);
+  });
+
+  test('multi-method handler responds to GET', async () => {
+    const response = await fetch(`${BASE_URL}/get-or-post`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ method: 'GET' });
+  });
+
+  test('multi-method handler responds to POST', async () => {
+    const response = await fetch(`${BASE_URL}/get-or-post`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ method: 'POST' });
+  });
+
+  test('multi-method handler rejects PUT', async () => {
+    const response = await fetch(`${BASE_URL}/get-or-post`, { method: 'PUT' });
+    expect(response.status).toBe(405);
+  });
+
+  test('default handler responds to any method', async () => {
+    const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+    for (const method of methods) {
+      const response = await fetch(`${BASE_URL}/any-method`, { method });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ method });
+    }
+  });
+});

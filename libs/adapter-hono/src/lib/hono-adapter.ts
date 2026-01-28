@@ -12,8 +12,24 @@ export class HonoAdapter implements DiraAdapter {
   ): Promise<void> {
     const app = new Hono();
 
-    for (const { route, handler } of routes) {
-      app.all(route, (c) => handler(c.req.raw));
+    for (const { route, handler, methods } of routes) {
+      if (!methods || methods.length === 0) {
+        // No methods specified - match all
+        app.all(route, (c) => handler(c.req.raw));
+      } else {
+        // Method-restricted route: check method and return 405 if not allowed
+        app.all(route, (c) => {
+          const requestMethod = c.req.method.toUpperCase();
+          if (methods.includes(requestMethod as (typeof methods)[number])) {
+            return handler(c.req.raw);
+          }
+          // Method not allowed - return 405 with Allow header
+          return new Response(null, {
+            status: 405,
+            headers: { Allow: methods.join(', ') },
+          });
+        });
+      }
     }
 
     const port = options?.port ?? 3000;

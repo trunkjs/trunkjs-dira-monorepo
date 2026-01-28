@@ -38,7 +38,7 @@ describe('DiraHttp', () => {
     expect(routes.map((r) => r.route)).toEqual(['/one', '/two']);
   });
 
-  test('stores httpMethod option', () => {
+  test('stores single httpMethod as array', () => {
     @DiraController()
     class TestController {
       @DiraHttp('/data', { method: 'POST' })
@@ -49,6 +49,50 @@ describe('DiraHttp', () => {
       HTTP_ROUTES,
       TestController,
     );
-    expect(routes[0].httpMethod).toBe('POST');
+    expect(routes[0].httpMethods).toEqual(['POST']);
+  });
+
+  test('stores multiple httpMethods', () => {
+    @DiraController()
+    class TestController {
+      @DiraHttp('/data', { method: ['GET', 'POST'] })
+      getData() {}
+    }
+
+    const routes: ControllerMetadata[] = Reflect.getMetadata(
+      HTTP_ROUTES,
+      TestController,
+    );
+    expect(routes[0].httpMethods).toEqual(['GET', 'POST']);
+  });
+
+  test('httpMethods is undefined when not specified', () => {
+    @DiraController()
+    class TestController {
+      @DiraHttp('/data')
+      getData() {}
+    }
+
+    const routes: ControllerMetadata[] = Reflect.getMetadata(
+      HTTP_ROUTES,
+      TestController,
+    );
+    expect(routes[0].httpMethods).toBeUndefined();
+  });
+
+  test('accepts options as first argument (for handler())', () => {
+    @DiraController()
+    class TestController {
+      @DiraHttp({ method: 'DELETE' })
+      deleteItem() {}
+    }
+
+    const routes: ControllerMetadata[] = Reflect.getMetadata(
+      HTTP_ROUTES,
+      TestController,
+    );
+    expect(routes[0].httpMethods).toEqual(['DELETE']);
+    // Route should be ROUTE_FROM_HANDLER symbol (cast as string for storage)
+    expect(typeof routes[0].route).toBe('symbol');
   });
 });

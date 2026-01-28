@@ -2,6 +2,7 @@ export * from './lib/dira-core';
 export * from './lib/dira-adapter';
 export * from './lib/dira-adapter-options';
 export * from './lib/http-handler';
+export * from './lib/http-method';
 export * from './lib/route-registration';
 export * from './lib/controller-metadata';
 export * from './lib/dira-controller';
