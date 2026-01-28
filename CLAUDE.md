@@ -40,6 +40,20 @@ Dira is a decorator-based HTTP framework for Bun with an adapter pattern for fle
 - **Imperative API**: `DiraCore.registerHandler(route, handler)` for direct route registration with type-safe `DiraRequest`
 - **Decorator API**: `@DiraController(prefix)` and `@DiraHttp(route)` for class-based controllers with automatic discovery via `DiraCore.discover(directory)`
 
+**Route naming for SDK generation**: Controllers and handlers can specify explicit names used in the generated client SDK:
+
+```typescript
+@DiraController('/admin', { name: 'admin' })
+export class AdminController {
+  @DiraHttp('/status', { name: 'get-status' })
+  status() { ... }
+}
+// Generated SDK: api.admin.getStatus.$get()
+// Route key: 'admin.get-status'
+```
+
+Without explicit names, names are derived from the class/method names (e.g., `AdminController` → `admin`, `getStatus` → `getStatus`).
+
 **libs/adapter-hono** - Hono-based HTTP adapter implementing `DiraAdapter` interface. The adapter pattern allows swapping HTTP implementations without changing application code.
 
 **libs/codegen** - Static code generation package that uses the TypeScript Compiler API to analyze Dira controllers and generate a fully-typed client SDK. Key capabilities:

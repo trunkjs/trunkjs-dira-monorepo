@@ -2,7 +2,15 @@ import type { DiraRequest } from './dira-request';
 import type { ExtractParams } from './types/extract-params';
 import type { HandlerReturn } from './types/handler-return';
 
-/** Internal handler type used by RouteRegistration. */
+/**
+ * Low-level handler type used internally by RouteRegistration and adapters.
+ * Takes a raw Request and returns a raw Response.
+ *
+ * For user-facing handlers, use `DiraHandler` instead which provides
+ * type-safe access to body, query, and path parameters via `DiraRequest`.
+ *
+ * @internal
+ */
 export type HttpHandler = (req: Request) => Promise<Response>;
 
 /**
