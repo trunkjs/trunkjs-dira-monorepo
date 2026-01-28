@@ -11,6 +11,7 @@ export interface GenerateClientCodeOptions {
 /**
  * Generates a self-contained TypeScript client file from extracted route metadata.
  * The output includes runtime helpers, typed interfaces, and a `createClient` factory.
+ * Uses a Proxy-based implementation to avoid duplicating the nested structure.
  */
 export function generateClientCode(
   routes: ExtractedRoute[],
@@ -89,7 +90,21 @@ export function generateClientCode(
   lines.push(`}`);
   lines.push('');
 
-  // Group routes by controller
+  // Generate route map
+  lines.push(
+    `const routes: Record<string, { path: string; methods: string[] }> = {`,
+  );
+  for (const route of routes) {
+    const key = `${route.controllerName}.${route.handlerName}`;
+    const methods = route.httpMethods ?? [...DEFAULT_METHODS];
+    lines.push(
+      `  '${key}': { path: '${route.fullRoute}', methods: ${JSON.stringify(methods)} },`,
+    );
+  }
+  lines.push(`};`);
+  lines.push('');
+
+  // Group routes by controller for interface generation
   const byController = new Map<string, ExtractedRoute[]>();
   for (const route of routes) {
     const existing = byController.get(route.controllerName) ?? [];
@@ -108,19 +123,30 @@ export function generateClientCode(
   lines.push(`}`);
   lines.push('');
 
-  // Generate createClient
+  // Generate Proxy-based createClient
   lines.push(
     `export function createClient(baseUrl: string, options?: ClientOptions): ${clientName} {`,
   );
   lines.push(`  const fetchFn = options?.fetch ?? fetch;`);
-  lines.push(`  return {`);
-  for (const [controllerName, controllerRoutes] of byController) {
-    const segments = controllerName.includes('.')
-      ? controllerName.split('.')
-      : [controllerName];
-    lines.push(...generateNestedObject(segments, controllerRoutes, 2));
-  }
-  lines.push(`  };`);
+  lines.push('');
+  lines.push(`  function createProxy(pathParts: string[]): unknown {`);
+  lines.push(`    return new Proxy(() => {}, {`);
+  lines.push(`      get(_, prop: string) {`);
+  lines.push(`        if (prop.startsWith('$')) {`);
+  lines.push(`          const method = prop.slice(1).toUpperCase();`);
+  lines.push(`          const routeKey = pathParts.join('.');`);
+  lines.push(`          const route = routes[routeKey];`);
+  lines.push(`          if (!route) return undefined;`);
+  lines.push(
+    `          return (opts?: unknown) => request(fetchFn, baseUrl, method, route.path, opts as any);`,
+  );
+  lines.push(`        }`);
+  lines.push(`        return createProxy([...pathParts, prop]);`);
+  lines.push(`      },`);
+  lines.push(`    });`);
+  lines.push(`  }`);
+  lines.push('');
+  lines.push(`  return createProxy([]) as ${clientName};`);
   lines.push(`}`);
 
   return lines.join('\n') + '\n';
@@ -165,46 +191,6 @@ function generateHandlerType(route: ExtractedRoute, indent: number): string[] {
     );
   }
   lines.push(`${pad}};`);
-
-  return lines;
-}
-
-function generateNestedObject(
-  segments: string[],
-  routes: ExtractedRoute[],
-  indent: number,
-): string[] {
-  const pad = '  '.repeat(indent);
-  const lines: string[] = [];
-
-  if (segments.length === 1) {
-    lines.push(`${pad}${segments[0]}: {`);
-    for (const route of routes) {
-      lines.push(...generateHandlerImpl(route, indent + 1));
-    }
-    lines.push(`${pad}},`);
-  } else {
-    lines.push(`${pad}${segments[0]}: {`);
-    lines.push(...generateNestedObject(segments.slice(1), routes, indent + 1));
-    lines.push(`${pad}},`);
-  }
-
-  return lines;
-}
-
-function generateHandlerImpl(route: ExtractedRoute, indent: number): string[] {
-  const pad = '  '.repeat(indent);
-  const lines: string[] = [];
-  const methods = route.httpMethods ?? [...DEFAULT_METHODS];
-
-  lines.push(`${pad}${route.handlerName}: {`);
-  for (const method of methods) {
-    const m = method.toLowerCase();
-    lines.push(
-      `${pad}  $${m}: (options?: any) => request(fetchFn, baseUrl, '${method}', '${route.fullRoute}', options) as any,`,
-    );
-  }
-  lines.push(`${pad}},`);
 
   return lines;
 }

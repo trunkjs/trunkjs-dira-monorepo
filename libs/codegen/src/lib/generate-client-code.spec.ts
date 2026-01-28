@@ -86,7 +86,7 @@ describe('generateClientCode', () => {
     expect(code).toContain('Promise<TypedResponse<{ id: string }>>');
   });
 
-  it('should group handlers under controller name', () => {
+  it('should group handlers under controller name in interface', () => {
     const code = generateClientCode([
       makeRoute({ controllerName: 'items', handlerName: 'getItem' }),
       makeRoute({
@@ -96,10 +96,12 @@ describe('generateClientCode', () => {
         pathParams: [],
       }),
     ]);
-    // items should appear once as a group
+    // items should appear once in the interface (implementation uses Proxy)
     const matches = code.match(/items: \{/g);
-    // 2 occurrences: one in interface, one in implementation
-    expect(matches?.length).toBe(2);
+    expect(matches?.length).toBe(1);
+    // Both handlers should be in the interface
+    expect(code).toContain('getItem:');
+    expect(code).toContain('listItems:');
   });
 
   it('should nest controller names with dots', () => {
@@ -114,9 +116,9 @@ describe('generateClientCode', () => {
     expect(code).toContain('users: {');
   });
 
-  it('should include route path in implementation', () => {
+  it('should include route path in routes map', () => {
     const code = generateClientCode([makeRoute()]);
-    expect(code).toContain("'/items/:id'");
+    expect(code).toContain("path: '/items/:id'");
   });
 
   it('should include request runtime helper', () => {
@@ -124,6 +126,13 @@ describe('generateClientCode', () => {
     expect(code).toContain('function request(');
     expect(code).toContain('encodeURIComponent');
     expect(code).toContain('URLSearchParams');
+  });
+
+  it('should use Proxy-based implementation', () => {
+    const code = generateClientCode([makeRoute()]);
+    expect(code).toContain('new Proxy');
+    expect(code).toContain('createProxy');
+    expect(code).toContain('const routes:');
   });
 
   it('should use default DiraClient name when clientName not provided', () => {
