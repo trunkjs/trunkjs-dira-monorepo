@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import type { ControllerMetadata } from './controller-metadata';
 import type { HttpMethod } from './http-method';
+import { validateRouteName } from './validate-route-name';
 
 /** Symbol key for storing HTTP route metadata on controllers. */
 export const HTTP_ROUTES = Symbol('dira:http:routes');
@@ -12,6 +13,13 @@ export const ROUTE_FROM_HANDLER = Symbol('dira:route:from-handler');
 export interface DiraHttpOptions {
   /** HTTP method(s) this handler responds to. Defaults to all methods if not specified. */
   method?: HttpMethod | HttpMethod[];
+  /**
+   * Route name used for SDK generation.
+   * Must follow dot-naming convention: alphanumeric, dots, and hyphens only.
+   * Examples: "get-user", "list-all"
+   * Defaults to the method name if not specified.
+   */
+  name?: string;
 }
 
 /**
@@ -59,10 +67,17 @@ export function DiraHttp<TRoute extends string>(
         : [resolvedOptions.method]
       : undefined;
 
+    // Use provided name or fall back to method name
+    const name = resolvedOptions?.name ?? String(propertyKey);
+    if (resolvedOptions?.name) {
+      validateRouteName(resolvedOptions.name);
+    }
+
     routes.push({
       route: route ?? (ROUTE_FROM_HANDLER as unknown as string),
       method: String(propertyKey),
       httpMethods,
+      name,
     });
     Reflect.defineMetadata(HTTP_ROUTES, routes, target.constructor);
   };

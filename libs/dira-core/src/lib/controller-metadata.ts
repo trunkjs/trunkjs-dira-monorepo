@@ -8,4 +8,6 @@ export interface ControllerMetadata {
   method: string;
   /** HTTP method(s) this handler responds to. Undefined means all methods. */
   httpMethods?: HttpMethod[];
+  /** Route name for SDK generation. Defaults to method name. */
+  name: string;
 }

@@ -48,8 +48,10 @@ describe('Multiple Directory Discovery', () => {
   beforeAll(async () => {
     const dira = new DiraCore();
 
-    // Discover from multiple directories
-    await dira.discover(join(import.meta.dirname, '../src/controllers'));
+    // Discover from multiple directories (non-recursive to avoid duplicates)
+    await dira.discover(join(import.meta.dirname, '../src/controllers'), {
+      recursive: false,
+    });
     await dira.discover(join(import.meta.dirname, '../src/controllers/admin'));
 
     adapter = new HonoAdapter();

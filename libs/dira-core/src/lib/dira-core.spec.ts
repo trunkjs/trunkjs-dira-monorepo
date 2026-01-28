@@ -195,6 +195,182 @@ describe('DiraCore', () => {
         /@DiraHttp\(\) on "invalid" requires handler\(\) wrapper/,
       );
     });
+
+    describe('route names', () => {
+      test('builds full name from controller and method names', () => {
+        @DiraController('/api', { name: 'api' })
+        class TestController {
+          @DiraHttp('/users', { name: 'get-users' })
+          getUsers() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new TestController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('api.get-users');
+      });
+
+      test('uses class name as fallback for controller name', () => {
+        @DiraController('/api')
+        class UsersController {
+          @DiraHttp('/list', { name: 'list' })
+          list() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new UsersController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('UsersController.list');
+      });
+
+      test('uses method name as fallback for route name', () => {
+        @DiraController('/api', { name: 'api' })
+        class TestController {
+          @DiraHttp('/users')
+          getAllUsers() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new TestController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('api.getAllUsers');
+      });
+
+      test('uses both fallbacks when no names specified', () => {
+        @DiraController('/api')
+        class MyController {
+          @DiraHttp('/data')
+          fetchData() {
+            return {};
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new MyController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('MyController.fetchData');
+      });
+
+      test('works with handler() wrapper', () => {
+        @DiraController('/api', { name: 'api' })
+        class TestController {
+          @DiraHttp({ name: 'get-by-id' })
+          getUser = handler('/:id', (req) => {
+            return { id: req.params.id };
+          });
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new TestController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('api.get-by-id');
+      });
+
+      test('throws on duplicate explicit names within same controller', () => {
+        @DiraController('/api', { name: 'api' })
+        class TestController {
+          @DiraHttp('/users', { name: 'list' })
+          listUsers() {
+            return [];
+          }
+
+          @DiraHttp('/posts', { name: 'list' })
+          listPosts() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        expect(() => dira.registerController(new TestController())).toThrow(
+          /Duplicate route name "api\.list"/,
+        );
+      });
+
+      test('throws on duplicate implicit names (same method name)', () => {
+        @DiraController('/api', { name: 'api' })
+        class Controller1 {
+          @DiraHttp('/users')
+          list() {
+            return [];
+          }
+        }
+
+        @DiraController('/admin', { name: 'api' })
+        class Controller2 {
+          @DiraHttp('/posts')
+          list() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new Controller1());
+        expect(() => dira.registerController(new Controller2())).toThrow(
+          /Duplicate route name "api\.list"/,
+        );
+      });
+
+      test('throws on duplicate names across controllers', () => {
+        @DiraController('/api', { name: 'shared' })
+        class Controller1 {
+          @DiraHttp('/endpoint1', { name: 'action' })
+          action1() {
+            return {};
+          }
+        }
+
+        @DiraController('/admin', { name: 'shared' })
+        class Controller2 {
+          @DiraHttp('/endpoint2', { name: 'action' })
+          action2() {
+            return {};
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new Controller1());
+        expect(() => dira.registerController(new Controller2())).toThrow(
+          /Duplicate route name "shared\.action"/,
+        );
+      });
+
+      test('allows same method name with different controller names', () => {
+        @DiraController('/api', { name: 'users' })
+        class UsersController {
+          @DiraHttp('/list')
+          list() {
+            return [];
+          }
+        }
+
+        @DiraController('/api', { name: 'posts' })
+        class PostsController {
+          @DiraHttp('/list')
+          list() {
+            return [];
+          }
+        }
+
+        const dira = new DiraCore();
+        dira.registerController(new UsersController());
+        dira.registerController(new PostsController());
+
+        const routes = dira['routes'];
+        expect(routes[0].name).toBe('users.list');
+        expect(routes[1].name).toBe('posts.list');
+      });
+    });
   });
 
   describe('registerHandler', () => {
@@ -310,6 +486,57 @@ describe('DiraCore', () => {
       const result = dira.registerHandler('/test', () => ({}));
 
       expect(result).toBe(dira);
+    });
+
+    test('stores name when provided', () => {
+      const dira = new DiraCore();
+      dira.registerHandler('/users', () => [], { name: 'api.users.list' });
+
+      const routes = dira['routes'];
+      expect(routes[0].name).toBe('api.users.list');
+    });
+
+    test('name is undefined when not provided', () => {
+      const dira = new DiraCore();
+      dira.registerHandler('/users', () => []);
+
+      const routes = dira['routes'];
+      expect(routes[0].name).toBeUndefined();
+    });
+
+    test('throws on duplicate names', () => {
+      const dira = new DiraCore();
+      dira.registerHandler('/users', () => [], { name: 'api.users' });
+
+      expect(() =>
+        dira.registerHandler('/other', () => [], { name: 'api.users' }),
+      ).toThrow(/Duplicate route name "api\.users"/);
+    });
+
+    test('allows duplicate routes without names', () => {
+      const dira = new DiraCore();
+      dira.registerHandler('/users', () => []);
+      dira.registerHandler('/other', () => []);
+
+      const routes = dira['routes'];
+      expect(routes).toHaveLength(2);
+    });
+
+    test('throws on duplicate name between handler and controller', () => {
+      @DiraController('/api', { name: 'api' })
+      class TestController {
+        @DiraHttp('/users', { name: 'list' })
+        list() {
+          return [];
+        }
+      }
+
+      const dira = new DiraCore();
+      dira.registerHandler('/imperative', () => [], { name: 'api.list' });
+
+      expect(() => dira.registerController(new TestController())).toThrow(
+        /Duplicate route name "api\.list"/,
+      );
     });
   });
 });

@@ -95,4 +95,97 @@ describe('DiraHttp', () => {
     // Route should be ROUTE_FROM_HANDLER symbol (cast as string for storage)
     expect(typeof routes[0].route).toBe('symbol');
   });
+
+  describe('name option', () => {
+    test('stores explicit name in metadata', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp('/users', { name: 'get-all' })
+        getAllUsers() {}
+      }
+
+      const routes: ControllerMetadata[] = Reflect.getMetadata(
+        HTTP_ROUTES,
+        TestController,
+      );
+      expect(routes[0].name).toBe('get-all');
+    });
+
+    test('defaults to method name when name not provided', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp('/users')
+        listUsers() {}
+      }
+
+      const routes: ControllerMetadata[] = Reflect.getMetadata(
+        HTTP_ROUTES,
+        TestController,
+      );
+      expect(routes[0].name).toBe('listUsers');
+    });
+
+    test('accepts hyphenated names', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp('/users/:id', { name: 'get-by-id' })
+        getById() {}
+      }
+
+      const routes: ControllerMetadata[] = Reflect.getMetadata(
+        HTTP_ROUTES,
+        TestController,
+      );
+      expect(routes[0].name).toBe('get-by-id');
+    });
+
+    test('accepts dot-separated names', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp('/users', { name: 'users.list' })
+        list() {}
+      }
+
+      const routes: ControllerMetadata[] = Reflect.getMetadata(
+        HTTP_ROUTES,
+        TestController,
+      );
+      expect(routes[0].name).toBe('users.list');
+    });
+
+    test('accepts name in options-only form', () => {
+      @DiraController()
+      class TestController {
+        @DiraHttp({ method: 'DELETE', name: 'delete-item' })
+        deleteItem() {}
+      }
+
+      const routes: ControllerMetadata[] = Reflect.getMetadata(
+        HTTP_ROUTES,
+        TestController,
+      );
+      expect(routes[0].name).toBe('delete-item');
+      expect(routes[0].httpMethods).toEqual(['DELETE']);
+    });
+
+    test('throws for invalid name with spaces', () => {
+      expect(() => {
+        @DiraController()
+        class TestController {
+          @DiraHttp('/users', { name: 'get all' })
+          getAll() {}
+        }
+      }).toThrow(/Invalid route name/);
+    });
+
+    test('throws for invalid name with special characters', () => {
+      expect(() => {
+        @DiraController()
+        class TestController {
+          @DiraHttp('/users', { name: 'get!all' })
+          getAll() {}
+        }
+      }).toThrow(/Invalid route name/);
+    });
+  });
 });
