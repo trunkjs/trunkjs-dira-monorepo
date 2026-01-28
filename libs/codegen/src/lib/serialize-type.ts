@@ -1,4 +1,139 @@
 import ts from 'typescript';
+import type { TypeReference, TypeImportInfo } from './type-reference';
+
+/** Built-in types that should never be imported */
+const BUILTIN_TYPES = new Set([
+  'string',
+  'number',
+  'boolean',
+  'null',
+  'undefined',
+  'void',
+  'never',
+  'any',
+  'unknown',
+  'object',
+  'Array',
+  'Promise',
+  'Response',
+  'Date',
+  'Map',
+  'Set',
+  'Record',
+  'Partial',
+  'Required',
+  'Pick',
+  'Omit',
+  'Exclude',
+  'Extract',
+  'NonNullable',
+  'ReturnType',
+  'Parameters',
+  'InstanceType',
+  'Awaited',
+]);
+
+/**
+ * Extracts a TypeReference containing both the serialized type and import metadata.
+ * Returns importInfo: null for types that cannot be imported (anonymous, non-exported, built-in, external).
+ */
+export function extractTypeReference(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): TypeReference {
+  const inlineType = serializeType(type, checker);
+  const importInfo = extractImportInfo(type, checker);
+
+  return { inlineType, importInfo };
+}
+
+/**
+ * Attempts to extract import metadata for a type.
+ * Returns null if the type cannot be imported.
+ */
+function extractImportInfo(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): TypeImportInfo | null {
+  // Get the symbol - prefer alias symbol for type aliases
+  const symbol = type.aliasSymbol ?? type.getSymbol();
+  if (!symbol) return null;
+
+  const typeName = symbol.getName();
+
+  // Skip built-in types
+  if (BUILTIN_TYPES.has(typeName)) return null;
+
+  // Skip anonymous types (object literals, etc.)
+  if (typeName === '__type' || typeName === '__object') return null;
+
+  // Get the declaration to find the source file
+  const declarations = symbol.getDeclarations();
+  if (!declarations || declarations.length === 0) return null;
+
+  const declaration = declarations[0];
+  const sourceFile = declaration.getSourceFile();
+  const filePath = sourceFile.fileName;
+
+  // Skip types from node_modules or .d.ts files
+  if (filePath.includes('node_modules') || filePath.endsWith('.d.ts')) {
+    return null;
+  }
+
+  // Check if the type is exported
+  if (!isExportedSymbol(symbol, sourceFile, checker)) {
+    return null;
+  }
+
+  return {
+    typeName,
+    sourceFilePath: filePath,
+    isTypeOnly: true,
+  };
+}
+
+/**
+ * Checks if a symbol is exported from its containing source file.
+ */
+function isExportedSymbol(
+  symbol: ts.Symbol,
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+): boolean {
+  // Get the source file's symbol to check exports
+  const sourceSymbol = checker.getSymbolAtLocation(sourceFile);
+  if (!sourceSymbol) {
+    // Fall back to checking declaration modifiers
+    return hasExportModifier(symbol);
+  }
+
+  const exports = checker.getExportsOfModule(sourceSymbol);
+  return exports.some(
+    (exp) =>
+      exp === symbol ||
+      exp.name === symbol.name ||
+      (exp.flags & ts.SymbolFlags.Alias &&
+        checker.getAliasedSymbol(exp) === symbol),
+  );
+}
+
+/**
+ * Checks if a symbol's declaration has an export modifier.
+ */
+function hasExportModifier(symbol: ts.Symbol): boolean {
+  const declarations = symbol.getDeclarations();
+  if (!declarations || declarations.length === 0) return false;
+
+  for (const decl of declarations) {
+    const modifiers = ts.canHaveModifiers(decl)
+      ? ts.getModifiers(decl)
+      : undefined;
+    if (modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Converts a `ts.Type` into its string representation for code generation.

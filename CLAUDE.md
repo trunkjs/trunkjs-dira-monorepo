@@ -49,6 +49,7 @@ Dira is a decorator-based HTTP framework for Bun with an adapter pattern for fle
 - Generates a self-contained `.ts` file with `createClient(baseUrl)` factory producing `api.controllerName.handlerName.$method({ body?, query?, params? })` calls
 - Return types are unwrapped from `Promise<T>` and `HandlerReturn<T>` unions (filtering `Response`, `void`, `null`)
 - File discovery reuses `DiscoverOptions` from `@dira/dira-core` for consistent include/exclude/recursive configuration
+- **Type imports**: With `importTypes: true`, imports named exported types instead of inlining their structure, enabling IDE "go-to-definition" and reducing duplication. Falls back to inline for non-exported or anonymous types. Supports tsconfig path aliases.
 
 ### Data Flow
 

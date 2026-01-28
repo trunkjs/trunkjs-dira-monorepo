@@ -11,4 +11,11 @@ export interface CodegenOptions {
   fileOptions?: DiscoverOptions;
   /** Name for the generated client interface (e.g., "MyApiClient"). Defaults to "DiraClient". */
   clientName?: string;
+  /**
+   * When enabled, imports named types instead of inlining their structure.
+   * Only works for types that are named and exported from their source file.
+   * Falls back to inline for anonymous or non-exported types.
+   * @default false
+   */
+  importTypes?: boolean;
 }

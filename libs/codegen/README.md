@@ -91,13 +91,70 @@ The `options` parameter accepts:
 
 ## Options
 
-| Option            | Type               | Description                                                      |
-| ----------------- | ------------------ | ---------------------------------------------------------------- |
-| `controllerGlobs` | `string[]`         | Directories, file paths, or glob patterns                        |
-| `tsconfig`        | `string`           | Path to `tsconfig.json`                                          |
-| `outFile`         | `string?`          | If set, writes the generated code to this path                   |
-| `fileOptions`     | `DiscoverOptions?` | Override include/exclude extensions and recursion                |
-| `clientName`      | `string?`          | Name for the generated client interface (defaults to DiraClient) |
+| Option            | Type               | Description                                                                  |
+| ----------------- | ------------------ | ---------------------------------------------------------------------------- |
+| `controllerGlobs` | `string[]`         | Directories, file paths, or glob patterns                                    |
+| `tsconfig`        | `string`           | Path to `tsconfig.json`                                                      |
+| `outFile`         | `string?`          | If set, writes the generated code to this path                               |
+| `fileOptions`     | `DiscoverOptions?` | Override include/exclude extensions and recursion                            |
+| `clientName`      | `string?`          | Name for the generated client interface (defaults to DiraClient)             |
+| `importTypes`     | `boolean?`         | Import named types instead of inlining their structure (defaults to `false`) |
+
+### Importing types instead of inlining
+
+By default, the generated client inlines all type structures. With `importTypes: true`, the generator imports named, exported types from their source files instead:
+
+```typescript
+// Controller defines an exported interface
+export interface CreatePostBody {
+  title: string;
+  content: string;
+}
+
+@DiraController('/posts')
+export class PostsController {
+  @DiraHttp('/create', { method: 'POST' })
+  async createPost(req: DiraRequest<CreatePostBody>) {
+    // ...
+  }
+}
+```
+
+```typescript
+// Generate with type imports enabled
+generateClient({
+  controllerGlobs: ['./src/controllers'],
+  tsconfig: './tsconfig.json',
+  outFile: './src/generated/client.ts',
+  importTypes: true,
+});
+```
+
+The generated client will import the type:
+
+```typescript
+// Generated client.ts
+import type { CreatePostBody } from '../controllers/posts-controller';
+
+// Method signature uses the imported type
+$post(options: { body: CreatePostBody; headers?: HeadersInit }): Promise<TypedResponse<...>>;
+```
+
+**Benefits:**
+
+- IDE "go-to-definition" navigates to the original interface
+- Reduced duplication when types are shared across controllers
+- Better DX in monorepo scenarios
+
+**Fallback behavior:**
+
+- Non-exported types are inlined (no import possible)
+- Anonymous inline types (`{ foo: string }`) are inlined
+- Built-in types (`string`, `Array`, etc.) are never imported
+- Types from `node_modules` or `.d.ts` files are excluded
+
+**Path alias support:**
+The generator respects `paths` mappings from your `tsconfig.json`. If a type's source file matches a path alias pattern, the import will use the alias instead of a relative path.
 
 ### Using multiple API clients
 

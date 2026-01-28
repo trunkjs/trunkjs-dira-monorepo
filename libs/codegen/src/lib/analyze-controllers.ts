@@ -5,7 +5,13 @@ import { getControllerDecorator, getHttpDecorator } from './parse-decorators';
 import {
   analyzeHandlerProperty,
   analyzeMethodDeclaration,
+  type AnalyzeOptions,
 } from './analyze-types';
+
+export interface AnalyzeControllersOptions {
+  /** When true, extract rich type references for importing */
+  extractRefs?: boolean;
+}
 
 /**
  * Creates a TypeScript program from the given files and tsconfig, then walks
@@ -14,6 +20,7 @@ import {
 export function analyzeControllers(
   filePatterns: string[],
   tsconfigPath: string,
+  options?: AnalyzeControllersOptions,
 ): ExtractedRoute[] {
   const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
   const parsedConfig = ts.parseJsonConfigFileContent(
@@ -44,6 +51,8 @@ export function analyzeControllers(
       const controllerName =
         controllerNameRaw ?? toCamelCase(stripControllerSuffix(node.name.text));
 
+      const analyzeOpts: AnalyzeOptions = { extractRefs: options?.extractRefs };
+
       for (const member of node.members) {
         const httpInfo = getHttpDecorator(member);
         if (!httpInfo) continue;
@@ -55,25 +64,34 @@ export function analyzeControllers(
         let queryType: string | null = null;
         let returnType = 'unknown';
         let handlerRoute: string | undefined;
+        let bodyTypeRef: ExtractedRoute['bodyTypeRef'];
+        let queryTypeRef: ExtractedRoute['queryTypeRef'];
+        let returnTypeRef: ExtractedRoute['returnTypeRef'];
 
         if (ts.isPropertyDeclaration(member)) {
-          const result = analyzeHandlerProperty(member, checker);
+          const result = analyzeHandlerProperty(member, checker, analyzeOpts);
           bodyType = result.bodyType;
           queryType = result.queryType;
           returnType = result.returnType;
           handlerRoute = result.route;
+          bodyTypeRef = result.bodyTypeRef;
+          queryTypeRef = result.queryTypeRef;
+          returnTypeRef = result.returnTypeRef;
         } else if (ts.isMethodDeclaration(member)) {
-          const result = analyzeMethodDeclaration(member, checker);
+          const result = analyzeMethodDeclaration(member, checker, analyzeOpts);
           bodyType = result.bodyType;
           queryType = result.queryType;
           returnType = result.returnType;
+          bodyTypeRef = result.bodyTypeRef;
+          queryTypeRef = result.queryTypeRef;
+          returnTypeRef = result.returnTypeRef;
         }
 
         const route = httpInfo.route ?? handlerRoute ?? '';
         const fullRoute = normalizeRoute(prefix + route);
         const pathParams = extractPathParams(fullRoute);
 
-        routes.push({
+        const extracted: ExtractedRoute = {
           controllerName,
           handlerName,
           fullRoute,
@@ -82,7 +100,15 @@ export function analyzeControllers(
           queryType,
           returnType,
           pathParams,
-        });
+        };
+
+        if (options?.extractRefs) {
+          extracted.bodyTypeRef = bodyTypeRef;
+          extracted.queryTypeRef = queryTypeRef;
+          extracted.returnTypeRef = returnTypeRef;
+        }
+
+        routes.push(extracted);
       }
     });
   }

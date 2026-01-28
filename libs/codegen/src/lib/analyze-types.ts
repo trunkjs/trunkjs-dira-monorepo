@@ -1,11 +1,24 @@
 import ts from 'typescript';
-import { serializeType } from './serialize-type';
+import { serializeType, extractTypeReference } from './serialize-type';
+import type { TypeReference } from './type-reference';
+
+export interface AnalyzeOptions {
+  /** When true, extract rich type references for importing */
+  extractRefs?: boolean;
+}
 
 export interface AnalyzedTypes {
   bodyType: string | null;
   queryType: string | null;
   returnType: string;
   route?: string;
+
+  /** Rich type reference for body (when extractRefs enabled) */
+  bodyTypeRef?: TypeReference | null;
+  /** Rich type reference for query (when extractRefs enabled) */
+  queryTypeRef?: TypeReference | null;
+  /** Rich type reference for return type (when extractRefs enabled) */
+  returnTypeRef?: TypeReference;
 }
 
 /**
@@ -14,6 +27,7 @@ export interface AnalyzedTypes {
 export function analyzeHandlerProperty(
   member: ts.PropertyDeclaration,
   checker: ts.TypeChecker,
+  options?: AnalyzeOptions,
 ): AnalyzedTypes {
   const result: AnalyzedTypes = {
     bodyType: null,
@@ -42,6 +56,9 @@ export function analyzeHandlerProperty(
       const serialized = serializeType(bodyTsType, checker);
       if (!isDefaultType(serialized)) {
         result.bodyType = serialized;
+        if (options?.extractRefs) {
+          result.bodyTypeRef = extractTypeReference(bodyTsType, checker);
+        }
       }
     }
     if (typeArgs.length >= 2) {
@@ -49,6 +66,9 @@ export function analyzeHandlerProperty(
       const serialized = serializeType(queryTsType, checker);
       if (!isDefaultQueryType(serialized)) {
         result.queryType = serialized;
+        if (options?.extractRefs) {
+          result.queryTypeRef = extractTypeReference(queryTsType, checker);
+        }
       }
     }
   }
@@ -58,7 +78,10 @@ export function analyzeHandlerProperty(
     const sig = checker.getSignatureFromDeclaration(arrowFn);
     if (sig) {
       const rawReturnType = checker.getReturnTypeOfSignature(sig);
-      result.returnType = unwrapReturnType(rawReturnType, checker);
+      result.returnType = unwrapReturnType(rawReturnType, checker, options);
+      if (options?.extractRefs) {
+        result.returnTypeRef = unwrapReturnTypeRef(rawReturnType, checker);
+      }
     }
   }
 
@@ -71,6 +94,7 @@ export function analyzeHandlerProperty(
 export function analyzeMethodDeclaration(
   member: ts.MethodDeclaration,
   checker: ts.TypeChecker,
+  options?: AnalyzeOptions,
 ): AnalyzedTypes {
   const result: AnalyzedTypes = {
     bodyType: null,
@@ -91,6 +115,9 @@ export function analyzeMethodDeclaration(
           const serialized = serializeType(bodyTsType, checker);
           if (!isDefaultType(serialized)) {
             result.bodyType = serialized;
+            if (options?.extractRefs) {
+              result.bodyTypeRef = extractTypeReference(bodyTsType, checker);
+            }
           }
         }
         if (typeArgs.length >= 2) {
@@ -98,6 +125,9 @@ export function analyzeMethodDeclaration(
           const serialized = serializeType(queryTsType, checker);
           if (!isDefaultQueryType(serialized)) {
             result.queryType = serialized;
+            if (options?.extractRefs) {
+              result.queryTypeRef = extractTypeReference(queryTsType, checker);
+            }
           }
         }
       }
@@ -107,7 +137,10 @@ export function analyzeMethodDeclaration(
   const sig = checker.getSignatureFromDeclaration(member);
   if (sig) {
     const rawReturnType = checker.getReturnTypeOfSignature(sig);
-    result.returnType = unwrapReturnType(rawReturnType, checker);
+    result.returnType = unwrapReturnType(rawReturnType, checker, options);
+    if (options?.extractRefs) {
+      result.returnTypeRef = unwrapReturnTypeRef(rawReturnType, checker);
+    }
   }
 
   return result;
@@ -153,26 +186,12 @@ function findArrowFnArg(
 export function unwrapReturnType(
   type: ts.Type,
   checker: ts.TypeChecker,
+  _options?: AnalyzeOptions,
 ): string {
-  let unwrapped = type;
-  const symbol = type.getSymbol();
-  if (symbol?.getName() === 'Promise') {
-    const typeArgs = checker.getTypeArguments(type as ts.TypeReference);
-    if (typeArgs.length === 1) {
-      unwrapped = typeArgs[0];
-    }
-  }
+  const unwrapped = unwrapPromise(type, checker);
 
   if (unwrapped.isUnion()) {
-    const filtered = unwrapped.types.filter((t) => {
-      const name = t.getSymbol()?.getName();
-      if (name === 'Response') return false;
-      const flags = t.getFlags();
-      if (flags & ts.TypeFlags.Void) return false;
-      if (flags & ts.TypeFlags.Null) return false;
-      if (flags & ts.TypeFlags.Undefined) return false;
-      return true;
-    });
+    const filtered = filterUnionTypes(unwrapped.types);
 
     if (filtered.length === 0) return 'unknown';
     if (filtered.length === 1) return serializeType(filtered[0], checker);
@@ -185,6 +204,73 @@ export function unwrapReturnType(
   if (flags & ts.TypeFlags.Void) return 'unknown';
 
   return serializeType(unwrapped, checker);
+}
+
+/**
+ * Unwraps `Promise<T>` and filters union types, returning a TypeReference.
+ * For union types with multiple remaining members, returns inline (can't import a union directly).
+ */
+function unwrapReturnTypeRef(
+  type: ts.Type,
+  checker: ts.TypeChecker,
+): TypeReference {
+  const unwrapped = unwrapPromise(type, checker);
+
+  if (unwrapped.isUnion()) {
+    const filtered = filterUnionTypes(unwrapped.types);
+
+    if (filtered.length === 0) {
+      return { inlineType: 'unknown', importInfo: null };
+    }
+    if (filtered.length === 1) {
+      return extractTypeReference(filtered[0], checker);
+    }
+    // Union with multiple types - can't import a union, use inline
+    const inlineType = filtered
+      .map((t) => serializeType(t, checker))
+      .join(' | ');
+    return { inlineType, importInfo: null };
+  }
+
+  if (unwrapped.getSymbol()?.getName() === 'Response') {
+    return { inlineType: 'unknown', importInfo: null };
+  }
+
+  const flags = unwrapped.getFlags();
+  if (flags & ts.TypeFlags.Void) {
+    return { inlineType: 'unknown', importInfo: null };
+  }
+
+  return extractTypeReference(unwrapped, checker);
+}
+
+/**
+ * Unwraps `Promise<T>` to get the inner type.
+ */
+function unwrapPromise(type: ts.Type, checker: ts.TypeChecker): ts.Type {
+  const symbol = type.getSymbol();
+  if (symbol?.getName() === 'Promise') {
+    const typeArgs = checker.getTypeArguments(type as ts.TypeReference);
+    if (typeArgs.length === 1) {
+      return typeArgs[0];
+    }
+  }
+  return type;
+}
+
+/**
+ * Filters out `Response`, `void`, `null`, and `undefined` from union types.
+ */
+function filterUnionTypes(types: readonly ts.Type[]): ts.Type[] {
+  return types.filter((t) => {
+    const name = t.getSymbol()?.getName();
+    if (name === 'Response') return false;
+    const flags = t.getFlags();
+    if (flags & ts.TypeFlags.Void) return false;
+    if (flags & ts.TypeFlags.Null) return false;
+    if (flags & ts.TypeFlags.Undefined) return false;
+    return true;
+  });
 }
 
 function isDefaultType(serialized: string): boolean {

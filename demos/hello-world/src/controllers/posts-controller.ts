@@ -1,23 +1,23 @@
 import { DiraController, DiraHttp, handler } from '@dira/dira-core';
 import type { DiraRequest } from '@dira/dira-core';
 
-interface CreatePostBody {
+export interface CreatePostBody {
   title: string;
   content: string;
   tags?: string[];
 }
 
-interface UpdatePostBody {
+export interface UpdatePostBody {
   title?: string;
   content?: string;
 }
 
-interface PublishPostBody {
+export interface PublishPostBody {
   scheduledAt?: string;
   notifySubscribers: boolean;
 }
 
-interface PublishPostQuery {
+export interface PublishPostQuery {
   draft?: string;
   preview?: string;
 }
@@ -90,7 +90,7 @@ export class PostsController {
   }
 
   @DiraHttp('/metadata', {
-    method: 'GET'
+    method: 'GET',
   })
   getMetadata(req: DiraRequest) {
     return {
