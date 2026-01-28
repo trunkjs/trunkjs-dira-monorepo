@@ -13,6 +13,7 @@ bunx nx run-many -t test
 
 # Run tests for a specific project
 bunx nx run @dira/dira-core:test
+bunx nx run @dira/codegen:test
 bunx nx run hello-world:test
 
 # Build all projects
@@ -20,6 +21,9 @@ bunx nx run-many -t build
 
 # Start the demo server
 bun run --cwd demos/hello-world start
+
+# Generate typed client SDK from controllers
+bun run --cwd demos/hello-world codegen
 
 # Format code
 bunx prettier --write .
@@ -32,10 +36,19 @@ Dira is a decorator-based HTTP framework for Bun with an adapter pattern for fle
 ### Core Components
 
 **libs/dira-core** - Framework core with two APIs:
+
 - **Imperative API**: `DiraCore.registerHandler(route, handler)` for direct route registration with type-safe `DiraRequest`
 - **Decorator API**: `@DiraController(prefix)` and `@DiraHttp(route)` for class-based controllers with automatic discovery via `DiraCore.discover(directory)`
 
 **libs/adapter-hono** - Hono-based HTTP adapter implementing `DiraAdapter` interface. The adapter pattern allows swapping HTTP implementations without changing application code.
+
+**libs/codegen** - Static code generation package that uses the TypeScript Compiler API to analyze Dira controllers and generate a fully-typed client SDK. Key capabilities:
+
+- Extracts route metadata, body/query/return types from `@DiraController` and `@DiraHttp` decorators via AST analysis (no runtime reflection)
+- Supports both handler patterns: method declarations with `DiraRequest<TBody, TQuery>` and the curried `handler<TBody, TQuery>()('/route', fn)` wrapper
+- Generates a self-contained `.ts` file with `createClient(baseUrl)` factory producing `api.controllerName.handlerName.$method({ body?, query?, params? })` calls
+- Return types are unwrapped from `Promise<T>` and `HandlerReturn<T>` unions (filtering `Response`, `void`, `null`)
+- File discovery reuses `DiscoverOptions` from `@dira/dira-core` for consistent include/exclude/recursive configuration
 
 ### Data Flow
 
@@ -53,6 +66,22 @@ Controllers (decorated classes)
    Adapter starts HTTP server
 ```
 
+### Codegen Flow
+
+```
+Controller source files
+         ↓
+   collectTsFiles() + resolveFiles() find .ts files
+         ↓
+   analyzeControllers() creates ts.Program, walks AST
+         ↓
+   parse-decorators.ts extracts @DiraController / @DiraHttp metadata
+         ↓
+   analyze-types.ts extracts body, query, return types
+         ↓
+   generateClientCode() emits typed client .ts file
+```
+
 ## Code Organization
 
 - **One symbol per file**: Each file contains exactly one function, interface, class, or type
@@ -62,6 +91,7 @@ Controllers (decorated classes)
 ## Nx Integration
 
 Always use Nx to run tasks:
+
 ```bash
 bunx nx run-many -t <target>      # Run target for all projects
 bunx nx run <project>:<target>    # Run target for specific project

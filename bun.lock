@@ -32,6 +32,10 @@
       "name": "@dira/adapter-hono",
       "version": "0.0.1",
     },
+    "libs/codegen": {
+      "name": "@dira/codegen",
+      "version": "0.0.1",
+    },
     "libs/dira-core": {
       "name": "@dira/dira-core",
       "version": "0.0.1",
@@ -263,6 +267,8 @@
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@0.2.3", "", {}, "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw=="],
 
     "@dira/adapter-hono": ["@dira/adapter-hono@workspace:libs/adapter-hono"],
+
+    "@dira/codegen": ["@dira/codegen@workspace:libs/codegen"],
 
     "@dira/dira-core": ["@dira/dira-core@workspace:libs/dira-core"],
 
