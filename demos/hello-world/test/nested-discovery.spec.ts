@@ -4,9 +4,8 @@ import { DiraCore } from '@dira/dira-core';
 import { HonoAdapter } from '@dira/adapter-hono';
 
 describe('Nested Directory Discovery', () => {
-  const PORT = 3013;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -15,7 +14,8 @@ describe('Nested Directory Discovery', () => {
     await dira.discover(join(import.meta.dirname, '../src/controllers/admin'));
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -41,9 +41,8 @@ describe('Nested Directory Discovery', () => {
 });
 
 describe('Multiple Directory Discovery', () => {
-  const PORT = 3014;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -55,7 +54,8 @@ describe('Multiple Directory Discovery', () => {
     await dira.discover(join(import.meta.dirname, '../src/controllers/admin'));
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {

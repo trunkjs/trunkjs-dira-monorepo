@@ -272,3 +272,32 @@ describe('extractTypeReference', () => {
     expect(ref.importInfo).toBeNull(); // Promise is a built-in
   });
 });
+
+describe('serializeType depth limiting', () => {
+  it('should return unknown for excessively deep nested types', () => {
+    // Create a deeply nested type that exceeds MAX_SERIALIZATION_DEPTH (15)
+    const nestedType = Array.from({ length: 20 }, (_, i) => `L${i}`)
+      .reduce((acc, name) => `{ ${name}: ${acc} }`, 'string');
+    const { type, checker } = typeFromSource(`type T = ${nestedType};`);
+
+    const result = serializeType(type, checker);
+
+    // At some point in the deep nesting, it should return 'unknown'
+    expect(result).toContain('unknown');
+  });
+
+  it('should serialize types within depth limit correctly', () => {
+    // Create a moderately nested type (within MAX_SERIALIZATION_DEPTH)
+    const { type, checker } = typeFromSource(
+      'type T = { a: { b: { c: { d: string } } } };',
+    );
+
+    const result = serializeType(type, checker);
+
+    expect(result).toContain('a:');
+    expect(result).toContain('b:');
+    expect(result).toContain('c:');
+    expect(result).toContain('d: string');
+    expect(result).not.toContain('unknown');
+  });
+});

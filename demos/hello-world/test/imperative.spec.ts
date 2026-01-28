@@ -3,9 +3,8 @@ import { DiraCore } from '@dira/dira-core';
 import { HonoAdapter } from '@dira/adapter-hono';
 
 describe('Imperative API', () => {
-  const PORT = 3015;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -25,7 +24,8 @@ describe('Imperative API', () => {
     });
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -59,9 +59,8 @@ describe('Imperative API', () => {
 });
 
 describe('Imperative API Chaining', () => {
-  const PORT = 3016;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -73,7 +72,8 @@ describe('Imperative API Chaining', () => {
       .registerHandler('/c', () => new Response('c'));
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -92,9 +92,8 @@ describe('Imperative API Chaining', () => {
 });
 
 describe('Mixed API (Imperative + Decorators)', () => {
-  const PORT = 3017;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const { join } = await import('node:path');
@@ -114,7 +113,8 @@ describe('Mixed API (Imperative + Decorators)', () => {
     });
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -151,9 +151,8 @@ describe('Mixed API (Imperative + Decorators)', () => {
 });
 
 describe('Imperative API with Path Parameters', () => {
-  const PORT = 3023;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -196,7 +195,8 @@ describe('Imperative API with Path Parameters', () => {
     });
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -262,9 +262,8 @@ describe('Imperative API with Path Parameters', () => {
 });
 
 describe('HTTP Method Binding', () => {
-  const PORT = 3024;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -287,7 +286,8 @@ describe('HTTP Method Binding', () => {
     dira.registerHandler('/any-method', (req) => ({ method: req.method }));
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
@@ -345,9 +345,8 @@ describe('HTTP Method Binding', () => {
 });
 
 describe('Imperative API with Wildcard Parameters', () => {
-  const PORT = 3027;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -366,7 +365,8 @@ describe('Imperative API with Wildcard Parameters', () => {
     });
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {

@@ -1,6 +1,12 @@
 import ts from 'typescript';
 import type { TypeReference, TypeImportInfo } from './type-reference';
 
+/**
+ * Maximum recursion depth for type serialization.
+ * Prevents stack overflow on deeply nested or pathological types.
+ */
+const MAX_SERIALIZATION_DEPTH = 15;
+
 /** Built-in types that should never be imported */
 const BUILTIN_TYPES = new Set([
   'string',
@@ -138,13 +144,20 @@ function hasExportModifier(symbol: ts.Symbol): boolean {
 /**
  * Converts a `ts.Type` into its string representation for code generation.
  * Handles primitives, literals, unions, intersections, arrays, object types,
- * and unwraps `Promise<T>`. Uses a `visited` set to handle circular references.
+ * and unwraps `Promise<T>`. Uses a `visited` set to handle circular references
+ * and a depth limit to prevent stack overflow on deeply nested types.
  */
 export function serializeType(
   type: ts.Type,
   checker: ts.TypeChecker,
   visited: Set<ts.Type> = new Set(),
+  depth: number = 0,
 ): string {
+  // Guard against excessively deep recursion (pathological or circular types)
+  if (depth > MAX_SERIALIZATION_DEPTH) {
+    return 'unknown';
+  }
+
   if (visited.has(type)) {
     return 'unknown';
   }
@@ -171,20 +184,26 @@ export function serializeType(
     return (type as ts.Type & { intrinsicName: string }).intrinsicName;
   }
 
+  const nextDepth = depth + 1;
+
   if (type.isUnion()) {
-    const parts = type.types.map((t) => serializeType(t, checker, visited));
+    const parts = type.types.map((t) =>
+      serializeType(t, checker, visited, nextDepth),
+    );
     return parts.join(' | ');
   }
 
   if (type.isIntersection()) {
-    const parts = type.types.map((t) => serializeType(t, checker, visited));
+    const parts = type.types.map((t) =>
+      serializeType(t, checker, visited, nextDepth),
+    );
     return parts.join(' & ');
   }
 
   if (checker.isArrayType(type)) {
     const typeArgs = checker.getTypeArguments(type as ts.TypeReference);
     if (typeArgs.length === 1) {
-      const inner = serializeType(typeArgs[0], checker, visited);
+      const inner = serializeType(typeArgs[0], checker, visited, nextDepth);
       const needsParens = inner.includes('|') || inner.includes('&');
       return needsParens ? `(${inner})[]` : `${inner}[]`;
     }
@@ -203,14 +222,14 @@ export function serializeType(
       if (name === 'Promise') {
         const typeArgs = checker.getTypeArguments(ref);
         if (typeArgs.length === 1) {
-          return serializeType(typeArgs[0], checker, visited);
+          return serializeType(typeArgs[0], checker, visited, nextDepth);
         }
       }
 
       if (name === 'Array') {
         const typeArgs = checker.getTypeArguments(ref);
         if (typeArgs.length === 1) {
-          const inner = serializeType(typeArgs[0], checker, visited);
+          const inner = serializeType(typeArgs[0], checker, visited, nextDepth);
           const needsParens = inner.includes('|') || inner.includes('&');
           return needsParens ? `(${inner})[]` : `${inner}[]`;
         }
@@ -224,7 +243,7 @@ export function serializeType(
         const propType = checker.getTypeOfSymbol(prop);
         const optional =
           (prop.flags & ts.SymbolFlags.Optional) !== 0 ? '?' : '';
-        const serialized = serializeType(propType, checker, visited);
+        const serialized = serializeType(propType, checker, visited, nextDepth);
         return `${prop.getName()}${optional}: ${serialized}`;
       });
       visited.delete(type);

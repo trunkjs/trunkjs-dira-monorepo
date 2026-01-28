@@ -4,16 +4,16 @@ import { DiraCore } from '@dira/dira-core';
 import { HonoAdapter } from '@dira/adapter-hono';
 
 describe('App E2E', () => {
-  const PORT = 3012;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
     await dira.discover(join(import.meta.dirname, '../src/controllers'));
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {

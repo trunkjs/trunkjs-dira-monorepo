@@ -4,16 +4,16 @@ import { HonoAdapter } from '@dira/adapter-hono';
 import { ActionsController } from './actions-controller';
 
 describe('ActionsController', () => {
-  const PORT = 3022;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
     dira.registerController(new ActionsController());
 
     adapter = new HonoAdapter();
-    await adapter.start(dira['routes'], { port: PORT });
+    const { port, hostname } = await adapter.start(dira['routes'], { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {

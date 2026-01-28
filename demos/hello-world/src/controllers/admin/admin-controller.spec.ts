@@ -4,10 +4,9 @@ import { HonoAdapter } from '@dira/adapter-hono';
 import { AdminController } from './admin-controller';
 
 describe('AdminController', () => {
-  const PORT = 3018;
-  const BASE_URL = `http://localhost:${PORT}`;
   let adapter: HonoAdapter;
   let routes: RouteRegistration[];
+  let BASE_URL: string;
 
   beforeAll(async () => {
     const dira = new DiraCore();
@@ -15,7 +14,8 @@ describe('AdminController', () => {
 
     routes = dira['routes'];
     adapter = new HonoAdapter();
-    await adapter.start(routes, { port: PORT });
+    const { port, hostname } = await adapter.start(routes, { port: 0 });
+    BASE_URL = `http://${hostname}:${port}`;
   });
 
   afterAll(() => {
