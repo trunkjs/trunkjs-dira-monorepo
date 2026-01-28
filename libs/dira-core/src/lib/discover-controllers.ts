@@ -19,19 +19,26 @@ export async function discoverControllers(
 ): Promise<object[]> {
   const include = options?.include ?? DEFAULT_DISCOVER_OPTIONS.include;
   const exclude = options?.exclude ?? DEFAULT_DISCOVER_OPTIONS.exclude;
+  const recursive = options?.recursive ?? DEFAULT_DISCOVER_OPTIONS.recursive;
 
   const absolutePath = resolve(directory);
-  const files = await readdir(absolutePath);
-  const matchingFiles = files.filter(
-    (file) =>
-      include.some((ext) => file.endsWith(ext)) &&
-      !exclude.some((ext) => file.endsWith(ext)),
-  );
+  const entries = await readdir(absolutePath, {
+    withFileTypes: true,
+    recursive,
+  });
+
+  const matchingFiles = entries
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        include.some((ext) => entry.name.endsWith(ext)) &&
+        !exclude.some((ext) => entry.name.endsWith(ext)),
+    )
+    .map((entry) => join(entry.parentPath, entry.name));
 
   const controllers: object[] = [];
 
-  for (const file of matchingFiles) {
-    const filePath = join(absolutePath, file);
+  for (const filePath of matchingFiles) {
     const module = await import(filePath);
 
     for (const exportedValue of Object.values(module)) {
