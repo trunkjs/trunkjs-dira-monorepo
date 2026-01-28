@@ -11,20 +11,17 @@ describe('Imperative API', () => {
     const dira = new DiraCore();
 
     // Register routes using imperative API (no decorators)
-    dira.registerHttpHandler('/ping', async () => {
+    dira.registerHandler('/ping', () => {
       return new Response('pong');
     });
 
-    dira.registerHttpHandler('/greet', async (req: Request) => {
-      const url = new URL(req.url);
-      const name = url.searchParams.get('name') ?? 'World';
+    dira.registerHandler('/greet', (req) => {
+      const name = req.query.name ?? 'World';
       return new Response(`Hello, ${name}!`);
     });
 
-    dira.registerHttpHandler('/json', async () => {
-      return new Response(JSON.stringify({ imperative: true }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+    dira.registerHandler('/json', () => {
+      return { imperative: true };
     });
 
     adapter = new HonoAdapter();
@@ -71,9 +68,9 @@ describe('Imperative API Chaining', () => {
 
     // Test method chaining
     dira
-      .registerHttpHandler('/a', async () => new Response('a'))
-      .registerHttpHandler('/b', async () => new Response('b'))
-      .registerHttpHandler('/c', async () => new Response('c'));
+      .registerHandler('/a', () => new Response('a'))
+      .registerHandler('/b', () => new Response('b'))
+      .registerHandler('/c', () => new Response('c'));
 
     adapter = new HonoAdapter();
     await adapter.start(dira['routes'], { port: PORT });
@@ -104,7 +101,7 @@ describe('Mixed API (Imperative + Decorators)', () => {
     const dira = new DiraCore();
 
     // Mix imperative and decorator-based registration
-    dira.registerHttpHandler('/imperative', async () => {
+    dira.registerHandler('/imperative', () => {
       return new Response('from imperative');
     });
 
@@ -112,7 +109,7 @@ describe('Mixed API (Imperative + Decorators)', () => {
     await dira.discover(join(import.meta.dirname, '../src/controllers'));
 
     // Add more imperative handlers after discovery
-    dira.registerHttpHandler('/also-imperative', async () => {
+    dira.registerHandler('/also-imperative', () => {
       return new Response('also from imperative');
     });
 
@@ -150,5 +147,116 @@ describe('Mixed API (Imperative + Decorators)', () => {
       const response = await fetch(`${BASE_URL}${endpoint}`);
       expect(response.status).toBe(200);
     }
+  });
+});
+
+describe('Imperative API with Path Parameters', () => {
+  const PORT = 3023;
+  const BASE_URL = `http://localhost:${PORT}`;
+  let adapter: HonoAdapter;
+
+  beforeAll(async () => {
+    const dira = new DiraCore();
+
+    // Path params are auto-inferred from route pattern
+    dira.registerHandler('/items/:id', (req) => {
+      // req.params.id is typed as string (inferred from '/:id')
+      return { itemId: req.params.id };
+    });
+
+    dira.registerHandler('/users/:userId/orders/:orderId', (req) => {
+      // Both params are typed as string
+      return {
+        userId: req.params.userId,
+        orderId: req.params.orderId,
+      };
+    });
+
+    // Combining path params with query params
+    dira.registerHandler('/products/:category', (req) => {
+      return {
+        category: req.params.category,
+        sort: req.query.sort ?? 'default',
+        limit: req.query.limit ?? '10',
+      };
+    });
+
+    // Combining path params with request body
+    dira.registerHandler('/resources/:id/update', async (req) => {
+      const body = await req.json();
+      return {
+        id: req.params.id,
+        updated: body,
+      };
+    });
+
+    // Void return with path params
+    dira.registerHandler('/logs/:level', () => {
+      // Side effect only, no return
+    });
+
+    adapter = new HonoAdapter();
+    await adapter.start(dira['routes'], { port: PORT });
+  });
+
+  afterAll(() => {
+    adapter.stop();
+  });
+
+  test('extracts single path parameter', async () => {
+    const response = await fetch(`${BASE_URL}/items/abc-123`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ itemId: 'abc-123' });
+  });
+
+  test('extracts multiple path parameters', async () => {
+    const response = await fetch(`${BASE_URL}/users/u-42/orders/o-99`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      userId: 'u-42',
+      orderId: 'o-99',
+    });
+  });
+
+  test('combines path params with query params', async () => {
+    const response = await fetch(
+      `${BASE_URL}/products/electronics?sort=price&limit=20`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      category: 'electronics',
+      sort: 'price',
+      limit: '20',
+    });
+  });
+
+  test('combines path params with request body', async () => {
+    const response = await fetch(`${BASE_URL}/resources/res-789/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Updated Name', active: true }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      id: 'res-789',
+      updated: { name: 'Updated Name', active: true },
+    });
+  });
+
+  test('void return with path params produces 204', async () => {
+    const response = await fetch(`${BASE_URL}/logs/error`);
+
+    expect(response.status).toBe(204);
+  });
+
+  test('handles URL-encoded path parameters', async () => {
+    const response = await fetch(`${BASE_URL}/items/hello%2Fworld`);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ itemId: 'hello/world' });
   });
 });

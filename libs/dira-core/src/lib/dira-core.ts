@@ -1,25 +1,45 @@
 import 'reflect-metadata';
 import type { ControllerMetadata } from './controller-metadata';
+import { createDiraRequest } from './create-dira-request';
 import type { DiraAdapter } from './dira-adapter';
 import type { DiraAdapterOptions } from './dira-adapter-options';
 import { CONTROLLER_PREFIX } from './dira-controller';
 import { HTTP_ROUTES } from './dira-http';
 import { discoverControllers } from './discover-controllers';
 import type { DiscoverOptions } from './discover-options';
-import type { HttpHandler } from './http-handler';
+import { extractPathParams } from './extract-path-params';
+import type { DiraHandler, HttpHandler } from './http-handler';
 import type { RouteRegistration } from './route-registration';
+import { wrapResponse } from './wrap-response';
 
 /** Core framework class for registering HTTP handlers and running the server. */
 export class DiraCore {
   private routes: RouteRegistration[] = [];
 
   /**
-   * Registers a single HTTP handler for a route.
-   * @param route - Route path to handle.
-   * @param handler - Async function that processes requests and returns responses.
+   * Wraps a handler function to convert DiraRequest-based handlers to HttpHandler.
+   * Extracts path params, creates DiraRequest, and wraps the response.
    */
-  registerHttpHandler(route: string, handler: HttpHandler): this {
-    this.routes.push({ route, handler });
+  private wrapHandler(route: string, handler: Function): HttpHandler {
+    return async (rawReq: Request): Promise<Response> => {
+      const params = extractPathParams(route, rawReq.url);
+      const diraReq = createDiraRequest(rawReq, params);
+      const result = handler(diraReq);
+      return wrapResponse(result);
+    };
+  }
+
+  /**
+   * Registers a type-safe handler with auto-inferred path parameters.
+   * @param route - Route pattern with parameters (e.g., "/users/:id")
+   * @param handler - Handler function receiving DiraRequest with typed params
+   */
+  registerHandler<TRoute extends string>(
+    route: TRoute,
+    handler: DiraHandler<TRoute>,
+  ): this {
+    const wrappedHandler = this.wrapHandler(route, handler);
+    this.routes.push({ route, handler: wrappedHandler });
     return this;
   }
 
@@ -35,10 +55,11 @@ export class DiraCore {
 
     for (const { route, method } of routes) {
       const fullRoute = prefix + route;
-      const handler = (controller as Record<string, HttpHandler>)[method].bind(
-        controller,
-      );
-      this.registerHttpHandler(fullRoute, handler);
+      const originalHandler = (controller as Record<string, Function>)[
+        method
+      ].bind(controller);
+      const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
+      this.routes.push({ route: fullRoute, handler: wrappedHandler });
     }
     return this;
   }

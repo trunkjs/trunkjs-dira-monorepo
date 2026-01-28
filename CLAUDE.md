@@ -32,7 +32,7 @@ Dira is a decorator-based HTTP framework for Bun with an adapter pattern for fle
 ### Core Components
 
 **libs/dira-core** - Framework core with two APIs:
-- **Imperative API**: `DiraCore.registerHttpHandler(route, handler)` for direct route registration
+- **Imperative API**: `DiraCore.registerHandler(route, handler)` for direct route registration with type-safe `DiraRequest`
 - **Decorator API**: `@DiraController(prefix)` and `@DiraHttp(route)` for class-based controllers with automatic discovery via `DiraCore.discover(directory)`
 
 **libs/adapter-hono** - Hono-based HTTP adapter implementing `DiraAdapter` interface. The adapter pattern allows swapping HTTP implementations without changing application code.

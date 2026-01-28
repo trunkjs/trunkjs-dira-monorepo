@@ -14,9 +14,10 @@ export interface DiraHttpOptions {
  * Method decorator that registers a method as an HTTP handler.
  * @param route - Route path for this handler, appended to controller prefix.
  * @param options - Optional configuration for the handler.
+ * @template TRoute - Route pattern string for type inference (e.g., "/users/:id")
  */
-export function DiraHttp(
-  route: string,
+export function DiraHttp<TRoute extends string>(
+  route: TRoute,
   options?: DiraHttpOptions,
 ): MethodDecorator {
   return function (
