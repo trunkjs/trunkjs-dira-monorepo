@@ -8,6 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies
 bun install
 
+# Lint all projects
+bunx nx run-many -t lint
+
 # Run all tests
 bunx nx run-many -t test
 
@@ -100,8 +103,25 @@ Controller source files
 ## Code Organization
 
 - **One symbol per file**: Each file contains exactly one function, interface, class, or type
-- **Dependencies in root package.json only**: Sub-packages must not define their own dependencies
 - **Tests as `.spec.ts` files**: Place unit tests next to source files; e2e tests go in `test/` directory
+
+## Dependency Management
+
+This workspace uses a **single version policy** with the `@nx/dependency-checks` ESLint rule:
+
+- **Root `package.json`**: Defines all dependency versions (single source of truth)
+- **Library `package.json`**: Must declare runtime dependencies for publishability
+- **Apps (`demos/`)**: Private apps rely on workspace hoisting; no explicit deps required
+
+The `@nx/dependency-checks` rule automatically detects missing/obsolete dependencies in publishable libraries during linting. Run `bunx nx run-many -t lint --fix` to auto-fix dependency issues.
+
+```bash
+# Check dependencies
+bunx nx run-many -t lint
+
+# Auto-fix missing dependencies
+bunx eslint libs/*/package.json --fix
+```
 
 ## Nx Integration
 

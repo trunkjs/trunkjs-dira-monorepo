@@ -7,5 +7,6 @@
     "build": "bun build src/main.ts --outdir dist --target bun",
     "test": "bun test",
     "codegen": "bun run generate-client.ts"
-  }
+  },
+  "dependencies": {}
 }

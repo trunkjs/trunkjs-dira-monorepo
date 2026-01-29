@@ -3,5 +3,10 @@
   "version": "0.0.1",
   "type": "module",
   "main": "./index.ts",
-  "types": "./index.ts"
+  "types": "./index.ts",
+  "dependencies": {
+    "@dira/dira-core": "0.0.1",
+    "hono": "^4.0.0",
+    "tslib": "^2.3.0"
+  }
 }
