@@ -1,4 +1,4 @@
-import { relative, dirname, resolve, posix } from 'node:path';
+import { relative, dirname, resolve } from 'node:path';
 import ts from 'typescript';
 
 /**
@@ -43,11 +43,6 @@ function tryMatchPathAlias(
 
   for (const [pattern, mappings] of Object.entries(paths)) {
     if (!mappings || mappings.length === 0) continue;
-
-    // Convert path pattern to regex
-    // e.g., "@dira/*" -> /^@dira\/(.*)$/
-    const patternRegex = pattern.replace(/\*/g, '(.*)');
-    const escapedPattern = patternRegex.replace(/[/]/g, '\\/');
 
     for (const mapping of mappings) {
       // Resolve the mapping path
