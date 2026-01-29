@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: bun ci
 
+      - name: Lint
+        run: bunx nx run-many -t lint
+
       - name: Run tests
         run: bunx nx run-many -t test
 

@@ -11,6 +11,9 @@
     },
     {
       "path": "./demos/hello-world"
+    },
+    {
+      "path": "./libs/codegen"
     }
   ]
 }

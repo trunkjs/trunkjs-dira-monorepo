@@ -1,25 +1,82 @@
 import 'reflect-metadata';
 import type { ControllerMetadata } from './controller-metadata';
+import { convertRouteForAdapter } from './convert-route-for-adapter';
+import { createDiraRequest } from './create-dira-request';
 import type { DiraAdapter } from './dira-adapter';
 import type { DiraAdapterOptions } from './dira-adapter-options';
-import { CONTROLLER_PREFIX } from './dira-controller';
-import { HTTP_ROUTES } from './dira-http';
+import { CONTROLLER_NAME, CONTROLLER_PREFIX } from './dira-controller';
+import { HTTP_ROUTES, ROUTE_FROM_HANDLER } from './dira-http';
 import { discoverControllers } from './discover-controllers';
 import type { DiscoverOptions } from './discover-options';
-import type { HttpHandler } from './http-handler';
+import { extractPathParams } from './extract-path-params';
+import { isHandlerWrapper } from './handler';
+import type { HttpMethod } from './http-method';
+import type { DiraHandler, HttpHandler } from './http-handler';
 import type { RouteRegistration } from './route-registration';
+import { validateRoute } from './validate-route';
+import { wrapResponse } from './wrap-response';
 
 /** Core framework class for registering HTTP handlers and running the server. */
 export class DiraCore {
   private routes: RouteRegistration[] = [];
+  private registeredNames = new Set<string>();
 
   /**
-   * Registers a single HTTP handler for a route.
-   * @param route - Route path to handle.
-   * @param handler - Async function that processes requests and returns responses.
+   * Validates that a route name is unique across all registered routes.
+   * @throws Error if the name is already registered.
    */
-  registerHttpHandler(route: string, handler: HttpHandler): this {
-    this.routes.push({ route, handler });
+  private validateUniqueName(name: string): void {
+    if (this.registeredNames.has(name)) {
+      throw new Error(
+        `Duplicate route name "${name}". Route names must be unique across all handlers.`,
+      );
+    }
+    this.registeredNames.add(name);
+  }
+
+  /**
+   * Wraps a handler function to convert DiraRequest-based handlers to HttpHandler.
+   * Extracts path params, creates DiraRequest, and wraps the response.
+   */
+  private wrapHandler(route: string, handler: Function): HttpHandler {
+    return async (rawReq: Request): Promise<Response> => {
+      const params = extractPathParams(route, rawReq.url);
+      const diraReq = createDiraRequest(rawReq, params);
+      const result = handler(diraReq);
+      return wrapResponse(result);
+    };
+  }
+
+  /**
+   * Registers a type-safe handler with auto-inferred path parameters.
+   * @param route - Route pattern with parameters (e.g., "/users/:id" or "/files/::path")
+   * @param handler - Handler function receiving DiraRequest with typed params
+   * @param options - Optional configuration including HTTP methods and name
+   */
+  registerHandler<TRoute extends string>(
+    route: TRoute,
+    handler: DiraHandler<TRoute>,
+    options?: { method?: HttpMethod | HttpMethod[]; name?: string },
+  ): this {
+    validateRoute(route);
+
+    if (options?.name) {
+      this.validateUniqueName(options.name);
+    }
+
+    const wrappedHandler = this.wrapHandler(route, handler);
+    const adapterRoute = convertRouteForAdapter(route);
+    const methods = options?.method
+      ? Array.isArray(options.method)
+        ? options.method
+        : [options.method]
+      : undefined;
+    this.routes.push({
+      route: adapterRoute,
+      handler: wrappedHandler,
+      methods,
+      name: options?.name,
+    });
     return this;
   }
 
@@ -30,15 +87,48 @@ export class DiraCore {
   registerController(controller: object): this {
     const prefix: string =
       Reflect.getMetadata(CONTROLLER_PREFIX, controller.constructor) || '';
+    const controllerName: string =
+      Reflect.getMetadata(CONTROLLER_NAME, controller.constructor) ||
+      controller.constructor.name;
     const routes: ControllerMetadata[] =
       Reflect.getMetadata(HTTP_ROUTES, controller.constructor) || [];
 
-    for (const { route, method } of routes) {
+    for (const { route: metadataRoute, method, httpMethods, name } of routes) {
+      const property = (controller as Record<string, unknown>)[method];
+
+      let route: string;
+      let originalHandler: Function;
+
+      // Check if this is a handler() wrapper
+      if (isHandlerWrapper(property)) {
+        route = property.route;
+        originalHandler = property.handler;
+      } else if (metadataRoute === (ROUTE_FROM_HANDLER as unknown)) {
+        throw new Error(
+          `@DiraHttp() on "${method}" requires handler() wrapper. ` +
+            `Use @DiraHttp('/route') or wrap with handler('/route', fn).`,
+        );
+      } else {
+        route = metadataRoute;
+        originalHandler = (property as Function).bind(controller);
+      }
+
       const fullRoute = prefix + route;
-      const handler = (controller as Record<string, HttpHandler>)[method].bind(
-        controller,
-      );
-      this.registerHttpHandler(fullRoute, handler);
+      validateRoute(fullRoute);
+
+      // Build full route name: controllerName.methodName
+      const fullName = `${controllerName}.${name}`;
+      this.validateUniqueName(fullName);
+
+      const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
+      const adapterRoute = convertRouteForAdapter(fullRoute);
+
+      this.routes.push({
+        route: adapterRoute,
+        handler: wrappedHandler,
+        methods: httpMethods,
+        name: fullName,
+      });
     }
     return this;
   }
