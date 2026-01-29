@@ -15,7 +15,7 @@ bunx nx run-many -t lint
 bunx nx run-many -t test
 
 # Run tests for a specific project
-bunx nx run @dira/dira-core:test
+bunx nx run @dira/core:test
 bunx nx run @dira/codegen:test
 bunx nx run hello-world:test
 
@@ -65,7 +65,7 @@ Without explicit names, names are derived from the class/method names (e.g., `Ad
 - Supports both handler patterns: method declarations with `DiraRequest<TBody, TQuery>` and the curried `handler<TBody, TQuery>()('/route', fn)` wrapper
 - Generates a self-contained `.ts` file with `createClient(baseUrl)` factory producing `api.controllerName.handlerName.$method({ body?, query?, params? })` calls
 - Return types are unwrapped from `Promise<T>` and `HandlerReturn<T>` unions (filtering `Response`, `void`, `null`)
-- File discovery reuses `DiscoverOptions` from `@dira/dira-core` for consistent include/exclude/recursive configuration
+- File discovery reuses `DiscoverOptions` from `@dira/core` for consistent include/exclude/recursive configuration
 - **Type imports**: With `importTypes: true`, imports named exported types instead of inlining their structure, enabling IDE "go-to-definition" and reducing duplication. Falls back to inline for non-exported or anonymous types. Supports tsconfig path aliases.
 
 ### Data Flow

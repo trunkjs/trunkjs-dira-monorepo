@@ -8,7 +8,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@dira/dira-core": "0.0.1",
+    "@dira/core": "0.0.1",
     "typescript": "~5.9.2",
     "tslib": "^2.3.0"
   }

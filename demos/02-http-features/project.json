@@ -1,0 +1,19 @@
+{
+  "name": "02-http-features",
+  "projectType": "application",
+  "sourceRoot": "demos/02-http-features/src",
+  "targets": {
+    "serve": {
+      "command": "bun run src/main.ts",
+      "options": {
+        "cwd": "demos/02-http-features"
+      }
+    },
+    "test": {
+      "command": "bun test",
+      "options": {
+        "cwd": "demos/02-http-features"
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
-import { DiraController, DiraHttp } from '@dira/dira-core';
-import type { DiraRequest } from '@dira/dira-core';
+import { DiraController, DiraHttp } from '@dira/core';
+import type { DiraRequest } from '@dira/core';
 
 @DiraController('/admin/users', { name: 'admin.users' })
 export class AdminUsersController {

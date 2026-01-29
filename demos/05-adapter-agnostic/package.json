@@ -1,0 +1,11 @@
+{
+  "name": "05-adapter-agnostic",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:hono": "bun run src/main-hono.ts",
+    "start:bun": "bun run src/main-bun.ts",
+    "test": "bun test"
+  }
+}

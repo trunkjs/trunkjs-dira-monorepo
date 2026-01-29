@@ -1,4 +1,4 @@
-import { DiraController, DiraHttp } from '@dira/dira-core';
+import { DiraController, DiraHttp } from '@dira/core';
 
 @DiraController('/raw')
 export class RawController {

@@ -1,0 +1,14 @@
+{
+  "name": "@dira/adapter-bun",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@dira/core": "0.0.1",
+    "tslib": "^2.3.0"
+  }
+}

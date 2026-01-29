@@ -1,9 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  DEFAULT_DISCOVER_OPTIONS,
-  type DiscoverOptions,
-} from '@dira/dira-core';
+import { DEFAULT_DISCOVER_OPTIONS, type DiscoverOptions } from '@dira/core';
 
 /** Recursively collects TypeScript files from a directory, respecting include/exclude options. */
 export function collectTsFiles(

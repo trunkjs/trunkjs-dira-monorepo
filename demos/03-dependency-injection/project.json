@@ -1,0 +1,19 @@
+{
+  "name": "03-dependency-injection",
+  "projectType": "application",
+  "sourceRoot": "demos/03-dependency-injection/src",
+  "targets": {
+    "serve": {
+      "command": "bun run src/main.ts",
+      "options": {
+        "cwd": "demos/03-dependency-injection"
+      }
+    },
+    "test": {
+      "command": "bun test",
+      "options": {
+        "cwd": "demos/03-dependency-injection"
+      }
+    }
+  }
+}

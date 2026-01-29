@@ -65,7 +65,7 @@ console.log(api.$routes);
 
 ## How it works
 
-1. **File discovery** — `resolveFiles` accepts directories, file paths, or globs and collects `.ts` files (respecting `DiscoverOptions` from `@dira/dira-core`)
+1. **File discovery** — `resolveFiles` accepts directories, file paths, or globs and collects `.ts` files (respecting `DiscoverOptions` from `@dira/core`)
 2. **AST analysis** — `analyzeControllers` creates a `ts.Program`, walks class declarations looking for `@DiraController` and `@DiraHttp` decorators, and extracts route, body, query, and return type metadata
 3. **Code generation** — `generateClientCode` emits a self-contained `.ts` file with a `createClient(baseUrl)` factory that returns `api.controller.handler.$method(options)`
 

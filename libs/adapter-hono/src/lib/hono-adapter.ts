@@ -1,10 +1,14 @@
+import type { Context, Hono as HonoType } from 'hono';
 import { Hono } from 'hono';
 import type {
   DiraAdapter,
   DiraAdapterOptions,
+  HttpMethod,
   RouteRegistration,
   ServerInfo,
-} from '@dira/dira-core';
+} from '@dira/core';
+
+type HonoMethodName = Lowercase<HttpMethod>;
 
 export class HonoAdapter implements DiraAdapter {
   private server: ReturnType<typeof Bun.serve> | null = null;
@@ -26,17 +30,19 @@ export class HonoAdapter implements DiraAdapter {
     const app = new Hono();
 
     for (const { route, handler, methods } of routes) {
+      const wrappedHandler = (c: Context) => handler(c.req.raw);
+
       if (!methods || methods.length === 0) {
         // No methods specified - match all
-        app.all(route, (c) => handler(c.req.raw));
+        app.all(route, wrappedHandler);
       } else {
-        // Method-restricted route: check method and return 405 if not allowed
-        app.all(route, (c) => {
-          const requestMethod = c.req.method.toUpperCase();
-          if (methods.includes(requestMethod as (typeof methods)[number])) {
-            return handler(c.req.raw);
-          }
-          // Method not allowed - return 405 with Allow header
+        // Register each allowed method using Hono's native method routing
+        for (const method of methods) {
+          const methodName = method.toLowerCase() as HonoMethodName;
+          (app[methodName] as HonoType['get'])(route, wrappedHandler);
+        }
+        // Fallback: return 405 for any other method on this route
+        app.all(route, () => {
           return new Response(null, {
             status: 405,
             headers: { Allow: methods.join(', ') },

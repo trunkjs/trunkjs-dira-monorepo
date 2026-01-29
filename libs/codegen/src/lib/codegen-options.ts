@@ -1,4 +1,4 @@
-import type { DiscoverOptions } from '@dira/dira-core';
+import type { DiscoverOptions } from '@dira/core';
 
 export interface CodegenOptions {
   /** Glob patterns or directory paths containing controller files. */

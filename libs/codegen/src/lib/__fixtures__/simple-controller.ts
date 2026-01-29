@@ -1,5 +1,5 @@
-import { DiraController, DiraHttp, handler } from '@dira/dira-core';
-import type { DiraRequest } from '@dira/dira-core';
+import { DiraController, DiraHttp, handler } from '@dira/core';
+import type { DiraRequest } from '@dira/core';
 
 interface CreateItemBody {
   name: string;

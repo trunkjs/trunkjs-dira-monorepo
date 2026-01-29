@@ -1,0 +1,19 @@
+{
+  "name": "01-minimal",
+  "projectType": "application",
+  "sourceRoot": "demos/01-minimal/src",
+  "targets": {
+    "serve": {
+      "command": "bun run src/main.ts",
+      "options": {
+        "cwd": "demos/01-minimal"
+      }
+    },
+    "test": {
+      "command": "bun test",
+      "options": {
+        "cwd": "demos/01-minimal"
+      }
+    }
+  }
+}

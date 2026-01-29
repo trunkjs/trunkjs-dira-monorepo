@@ -1,0 +1,25 @@
+{
+  "name": "04-full-app",
+  "projectType": "application",
+  "sourceRoot": "demos/04-full-app/src",
+  "targets": {
+    "serve": {
+      "command": "bun run src/main.ts",
+      "options": {
+        "cwd": "demos/04-full-app"
+      }
+    },
+    "test": {
+      "command": "bun test",
+      "options": {
+        "cwd": "demos/04-full-app"
+      }
+    },
+    "codegen": {
+      "command": "bun run generate-client.ts",
+      "options": {
+        "cwd": "demos/04-full-app"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { DiscoverOptions } from '@dira/dira-core';
+import type { DiscoverOptions } from '@dira/core';
 import { collectTsFiles } from './collect-ts-files';
 
 /**

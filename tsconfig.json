@@ -10,10 +10,22 @@
       "path": "./libs/adapter-hono"
     },
     {
-      "path": "./demos/hello-world"
+      "path": "./libs/dira-di"
     },
     {
       "path": "./libs/codegen"
+    },
+    {
+      "path": "./demos/01-minimal"
+    },
+    {
+      "path": "./demos/02-http-features"
+    },
+    {
+      "path": "./demos/03-dependency-injection"
+    },
+    {
+      "path": "./demos/04-full-app"
     }
   ]
 }
