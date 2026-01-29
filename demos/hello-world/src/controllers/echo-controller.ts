@@ -1,9 +1,11 @@
 import { DiraController, DiraHttp } from '@dira/dira-core';
+import { MyRequest } from '../main';
 
 @DiraController('/api')
 export class EchoController {
   @DiraHttp('/echo')
-  async echo(req: Request): Promise<Response> {
+  async echo(req: MyRequest): Promise<Response> {
+    req.
     const url = new URL(req.url);
     const message = url.searchParams.get('message') ?? 'no message';
     return new Response(JSON.stringify({ echo: message }), {

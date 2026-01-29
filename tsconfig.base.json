@@ -18,7 +18,8 @@
     "customConditions": ["dira"],
     "baseUrl": ".",
     "paths": {
-      "@dira/*": ["libs/*/src/index.ts"]
+      "@dira/*": ["libs/*/src/index.ts"],
+      "dira-di": ["dira-di/src/index.ts"]
     }
   }
 }
