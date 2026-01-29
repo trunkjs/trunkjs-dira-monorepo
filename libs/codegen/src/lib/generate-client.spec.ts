@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'bun:test';
 import { join } from 'node:path';
-import ts from 'typescript';
 import { analyzeControllers } from './analyze-controllers';
 import { generateClientCode } from './generate-client-code';
 
