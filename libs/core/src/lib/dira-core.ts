@@ -9,31 +9,119 @@ import { discoverControllers } from './discover-controllers';
 import type { DiscoverOptions } from './discover-options';
 import { extractPathParams } from './extract-path-params';
 import { isHandlerWrapper } from './handler';
-import type { HttpMethod } from './http-method';
 import type { DiraHandler, HttpHandler } from './http-handler';
+import {
+  attachContext,
+  composeMiddleware,
+  createContextStore,
+  getControllerMiddleware,
+  getRouteMiddleware,
+} from './middleware';
+import type { DiraMiddleware, MiddlewareDescriptor } from './middleware';
+import type { RegisterHandlerOptions } from './register-handler-options';
 import { DiraHttpRequest } from './request/dira-http-request';
 import type { DiraHttpRequestClass } from './request/dira-http-request-class';
 import { HttpRequestDataProvider } from './request/http-request-data-provider';
 import type { RouteRegistration } from './route-registration';
+import type { UseMiddlewareOptions } from './use-middleware-options';
 import { validateRoute } from './validate-route';
 import { wrapResponse } from './wrap-response';
 
-/** Core framework class for registering HTTP handlers and running the server. */
-export class DiraCore {
+/**
+ * Core framework class for registering HTTP handlers and running the server.
+ *
+ * @template TRequest - The request class type used for handlers and middleware.
+ *                      Defaults to DiraHttpRequest. Use setRequestClass() to narrow
+ *                      the type to your custom request class.
+ *
+ * @example
+ * // Basic usage with default request type
+ * const dira = new DiraCore()
+ *   .use(timingMiddleware)
+ *   .registerHandler('/health', () => ({ status: 'ok' }));
+ *
+ * @example
+ * // With custom request class for type-safe DI
+ * const dira = new DiraCore()
+ *   .setRequestClass(AppRequest)  // Returns DiraCore<AppRequest>
+ *   .use(loggingMiddleware)       // Middleware receives AppRequest
+ *   .registerHandler('/test', (req) => {
+ *     req.logger.log('Hello');    // Properly typed!
+ *     return { ok: true };
+ *   });
+ */
+export class DiraCore<
+  TRequest extends DiraHttpRequest = DiraHttpRequest,
+> {
   private routes: RouteRegistration[] = [];
   private registeredNames = new Set<string>();
   private RequestClass: DiraHttpRequestClass = DiraHttpRequest;
+  private globalMiddleware: MiddlewareDescriptor[] = [];
 
   /**
    * Sets a custom request class to use for all handlers.
-   * The class must extend DiraHttpRequest and accept a RequestDataProvider in its constructor.
+   * Returns a new type with the request class type parameter updated.
+   *
    * @param cls - Custom request class extending DiraHttpRequest
+   * @returns this with updated type parameter for chaining
+   *
+   * @example
+   * class AppRequest extends DiraHttpRequest {
+   *   @Cached() get logger() { return this.newInstanceOf(LoggerService); }
+   * }
+   *
+   * const dira = new DiraCore()
+   *   .setRequestClass(AppRequest)  // Now DiraCore<AppRequest>
+   *   .registerHandler('/test', (req) => {
+   *     req.logger.log('Works!');   // Properly typed
+   *   });
+   */
+  setRequestClass<T extends DiraHttpRequest>(
+    cls: new (factory: HttpRequestDataProvider) => T,
+  ): DiraCore<T> {
+    this.RequestClass = cls as unknown as DiraHttpRequestClass;
+    return this as unknown as DiraCore<T>;
+  }
+
+  /**
+   * Registers global middleware that runs on all routes.
+   *
+   * Middleware execution order follows a clear convention:
+   * 1. Global middleware (in order of `.use()` calls)
+   * 2. Controller-level middleware (in order of `@UseMiddleware` decorators)
+   * 3. Method-level middleware (in order of `@UseMiddleware` decorators)
+   *
+   * @example
+   * const dira = new DiraCore()
+   *   .setRequestClass(AppRequest)
+   *   .use(errorHandlerMiddleware())
+   *   .use(timingMiddleware)
+   *   .use(authMiddleware);
+   *
+   * @param middleware - Middleware function(s) to register
+   * @param options - Optional configuration for naming
    * @returns this for chaining
    */
-  setRequestClass<T extends DiraHttpRequest<unknown, unknown, unknown>>(
-    cls: new (factory: InstanceType<typeof HttpRequestDataProvider>) => T,
+  use(
+    middleware:
+      | DiraMiddleware<Record<string, unknown>, Record<string, unknown>, TRequest>
+      | DiraMiddleware<
+          Record<string, unknown>,
+          Record<string, unknown>,
+          TRequest
+        >[],
+    options?: UseMiddlewareOptions,
   ): this {
-    this.RequestClass = cls as unknown as DiraHttpRequestClass;
+    const middlewareArray = Array.isArray(middleware)
+      ? middleware
+      : [middleware];
+    const descriptors: MiddlewareDescriptor[] = middlewareArray.map(
+      (mw) => ({
+        middleware: mw,
+        name: options?.name,
+      }),
+    );
+    this.globalMiddleware.push(...descriptors);
     return this;
   }
 
@@ -52,28 +140,67 @@ export class DiraCore {
 
   /**
    * Wraps a handler function to convert DiraHttpRequest-based handlers to HttpHandler.
-   * Extracts path params, creates request factory, instantiates request class, and wraps the response.
+   * Extracts path params, creates request factory, instantiates request class,
+   * composes middleware chain, and wraps the response.
+   *
+   * @param route - The route pattern for path parameter extraction
+   * @param handler - The handler function to wrap
+   * @param middleware - Middleware descriptors to apply (combined global + controller + route)
    */
-  private wrapHandler(route: string, handler: Function): HttpHandler {
+  private wrapHandler(
+    route: string,
+    handler: Function,
+    middleware: MiddlewareDescriptor[] = [],
+  ): HttpHandler {
+    // Combine global middleware with provided middleware
+    const allMiddleware = [...this.globalMiddleware, ...middleware];
+
     return async (rawReq: Request): Promise<Response> => {
       const pathParams = extractPathParams(route, rawReq.url);
       const factory = new HttpRequestDataProvider(rawReq, pathParams);
       const request = new this.RequestClass(factory);
-      const result = handler(request);
+
+      // Cast request to TRequest - safe because RequestClass is set via setRequestClass<T>
+      const typedRequest = request as TRequest;
+
+      // If there's middleware, compose the chain
+      if (allMiddleware.length > 0) {
+        const chain = composeMiddleware(
+          allMiddleware,
+          handler as (request: TRequest) => unknown,
+        );
+        return chain(typedRequest);
+      }
+
+      // No middleware - direct execution with context attached
+      const store = createContextStore();
+      const requestWithContext = attachContext(typedRequest, store);
+      const result = handler(requestWithContext);
       return wrapResponse(result);
     };
   }
 
   /**
    * Registers a type-safe handler with auto-inferred path parameters.
+   *
+   * The handler receives the configured request class (TRequest) with
+   * typed path parameters extracted from the route pattern.
+   *
    * @param route - Route pattern with parameters (e.g., "/users/:id" or "/files/::path")
-   * @param handler - Handler function receiving DiraRequest with typed params
-   * @param options - Optional configuration including HTTP methods and name
+   * @param handler - Handler function receiving the request with typed params
+   * @param options - Optional configuration including HTTP methods, name, and middleware
+   *
+   * @example
+   * dira.registerHandler('/users/:id', (req) => {
+   *   const userId = req.params.id;  // Typed as string
+   *   req.logger.log(`Fetching ${userId}`);  // Works if using AppRequest
+   *   return { userId };
+   * });
    */
   registerHandler<TRoute extends string>(
     route: TRoute,
-    handler: DiraHandler<TRoute>,
-    options?: { method?: HttpMethod | HttpMethod[]; name?: string },
+    handler: DiraHandler<TRoute, unknown, Record<string, string | string[]>, unknown, TRequest>,
+    options?: RegisterHandlerOptions<TRequest>,
   ): this {
     validateRoute(route);
 
@@ -81,7 +208,15 @@ export class DiraCore {
       this.validateUniqueName(options.name);
     }
 
-    const wrappedHandler = this.wrapHandler(route, handler);
+    // Convert inline middleware to descriptors
+    const routeMiddleware: MiddlewareDescriptor[] = options?.middleware
+      ? (Array.isArray(options.middleware)
+          ? options.middleware
+          : [options.middleware]
+        ).map((mw) => ({ middleware: mw }))
+      : [];
+
+    const wrappedHandler = this.wrapHandler(route, handler, routeMiddleware);
     const adapterRoute = convertRouteForAdapter(route);
     const methods = options?.method
       ? Array.isArray(options.method)
@@ -99,12 +234,18 @@ export class DiraCore {
 
   /**
    * Registers all handlers from a controller instance decorated with @DiraController.
+   * Collects and applies controller-level and route-level middleware from @UseMiddleware decorators.
    * @param controller - Instance of a class decorated with @DiraController.
    */
   registerController(controller: object): this {
     const prefix = getControllerPrefix(controller.constructor);
     const controllerName = getControllerName(controller.constructor);
     const routes: ControllerMetadata[] = getHttpRoutes(controller);
+
+    // Get controller-level middleware from @UseMiddleware decorator
+    const controllerMiddleware = getControllerMiddleware(
+      controller.constructor,
+    );
 
     for (const { route: metadataRoute, method, httpMethods, name } of routes) {
       const property = (controller as Record<string, unknown>)[method];
@@ -133,7 +274,20 @@ export class DiraCore {
       const fullName = `${controllerName}.${name}`;
       this.validateUniqueName(fullName);
 
-      const wrappedHandler = this.wrapHandler(fullRoute, originalHandler);
+      // Get route-level middleware from @UseMiddleware decorator
+      const routeMiddleware = getRouteMiddleware(
+        controller.constructor,
+        method,
+      );
+
+      // Combine: controller middleware runs before route middleware
+      const combinedMiddleware = [...controllerMiddleware, ...routeMiddleware];
+
+      const wrappedHandler = this.wrapHandler(
+        fullRoute,
+        originalHandler,
+        combinedMiddleware,
+      );
       const adapterRoute = convertRouteForAdapter(fullRoute);
 
       this.routes.push({

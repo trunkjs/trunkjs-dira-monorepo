@@ -153,7 +153,7 @@ export function DiraHttp<TRoute extends string>(
       } else if (context.kind === 'field') {
         // Field decorator - store metadata by property name for later lookup
         // Return an initializer that registers the field
-        return function (this: object, initialValue: unknown) {
+        return (function (this: object, initialValue: unknown) {
           const ctor = this.constructor;
           let fieldMap = fieldRoutesMap.get(ctor);
           if (!fieldMap) {
@@ -162,7 +162,7 @@ export function DiraHttp<TRoute extends string>(
           }
           fieldMap.set(context.name, metadata);
           return initialValue;
-        } as undefined;
+        } as unknown) as undefined;
       }
     } else {
       // Legacy decorator: (target, propertyKey, descriptor?) => void

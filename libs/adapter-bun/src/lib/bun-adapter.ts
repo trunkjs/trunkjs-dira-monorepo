@@ -2,10 +2,15 @@ import type {
   DiraAdapter,
   DiraAdapterOptions,
   HttpMethod,
+  MiddlewareBridge,
   RouteRegistration,
   ServerInfo,
 } from '@dira/core';
 import { compileRoute, matchRoute, type CompiledRoute } from './route-matcher';
+import {
+  BunMiddlewareBridge,
+  type BunMiddleware,
+} from './bun-middleware-bridge';
 
 interface RegisteredRoute {
   compiled: CompiledRoute;
@@ -14,6 +19,21 @@ interface RegisteredRoute {
 }
 
 export class BunAdapter implements DiraAdapter {
+  /**
+   * Bridge for converting Bun-style middleware to Dira middleware.
+   *
+   * @example
+   * const adapter = new BunAdapter();
+   * const myMiddleware: BunMiddleware = async (req, next) => {
+   *   console.log('Request:', req.url);
+   *   return next();
+   * };
+   *
+   * const dira = new DiraCore()
+   *   .use(adapter.middlewareBridge.bridge(myMiddleware));
+   */
+  readonly middlewareBridge: MiddlewareBridge<BunMiddleware> =
+    new BunMiddlewareBridge();
   private server: ReturnType<typeof Bun.serve> | null = null;
   private routes: RegisteredRoute[] = [];
 

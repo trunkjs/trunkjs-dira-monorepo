@@ -1,0 +1,19 @@
+{
+  "name": "06-middleware",
+  "projectType": "application",
+  "sourceRoot": "demos/06-middleware/src",
+  "targets": {
+    "serve": {
+      "command": "bun run src/main.ts",
+      "options": {
+        "cwd": "demos/06-middleware"
+      }
+    },
+    "test": {
+      "command": "bun test",
+      "options": {
+        "cwd": "demos/06-middleware"
+      }
+    }
+  }
+}

@@ -4,13 +4,31 @@ import type {
   DiraAdapter,
   DiraAdapterOptions,
   HttpMethod,
+  MiddlewareBridge,
   RouteRegistration,
   ServerInfo,
 } from '@dira/core';
+import {
+  HonoMiddlewareBridge,
+  type HonoMiddleware,
+} from './hono-middleware-bridge';
 
 type HonoMethodName = Lowercase<HttpMethod>;
 
 export class HonoAdapter implements DiraAdapter {
+  /**
+   * Bridge for converting Hono middleware to Dira middleware.
+   * Use this to integrate Hono ecosystem middleware (cors, compress, etc.) with Dira.
+   *
+   * @example
+   * import { cors } from 'hono/cors';
+   *
+   * const adapter = new HonoAdapter();
+   * const dira = new DiraCore()
+   *   .use(adapter.middlewareBridge.bridge(cors()));
+   */
+  readonly middlewareBridge: MiddlewareBridge<HonoMiddleware> =
+    new HonoMiddlewareBridge();
   private server: ReturnType<typeof Bun.serve> | null = null;
 
   /** The port the server is listening on (available after start()) */
