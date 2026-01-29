@@ -4,7 +4,8 @@
  * Stage 3 decorators receive (value, context) where context has a 'kind' property.
  * Legacy decorators receive (target, propertyKey, descriptor?).
  *
- * Note: Bun currently uses legacy decorators regardless of tsconfig settings.
+ * Note: Bun currently uses legacy decorators regardless of tsconfig settings,
+ * so we must support both modes for Bun compatibility.
  *
  * @param contextOrPropertyKey - Second argument passed to the decorator
  * @returns true if stage 3 decorator mode, false if legacy
