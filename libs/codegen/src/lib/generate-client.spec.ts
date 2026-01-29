@@ -285,14 +285,13 @@ describe('generateClientCode with type imports', () => {
 
     // Count occurrences of import statement - should only be one
     const importCount = (
-      code.match(/from '\.\.\/\_\_fixtures\_\_\/exported-types-controller'/g) ||
-      []
+      code.match(/from '\.\.\/__fixtures__\/exported-types-controller'/g) || []
     ).length;
     expect(importCount).toBe(1);
 
     // But multiple types should be in the same import
     expect(code).toMatch(
-      /import type \{[^}]*CreateUserBody[^}]*UpdateUserBody[^}]*\}/,
+      /import type \{[^}]*CreateUserBody[^}]*UpdateUserBody[^}]*}/,
     );
   });
 
@@ -309,7 +308,7 @@ describe('generateClientCode with type imports', () => {
     });
 
     // Extract the import statement
-    const importMatch = code.match(/import type \{ ([^}]+) \}/);
+    const importMatch = code.match(/import type \{ ([^}]+) }/);
     expect(importMatch).not.toBeNull();
 
     const importedTypes = importMatch![1].split(', ');
