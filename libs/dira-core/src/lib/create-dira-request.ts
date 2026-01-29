@@ -8,9 +8,9 @@ import type { DiraRequest } from './dira-request';
  */
 export function createDiraRequest<
   TBody = unknown,
-  TQuery extends Record<string, string | string[]> = Record<
+  TQuery extends Record<string, string | string[] | undefined> = Record<
     string,
-    string | string[]
+    string | string[] | undefined
   >,
   TParams extends Record<string, string> = Record<string, string>,
 >(raw: Request, params: TParams): DiraRequest<TBody, TQuery, TParams> {
