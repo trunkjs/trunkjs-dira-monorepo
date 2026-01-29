@@ -47,12 +47,12 @@ function isMiddlewareFactory(
  * );
  * const response = await chain(request);
  */
-export function composeMiddleware(
+export function composeMiddleware<TRequest extends DiraHttpRequest>(
   middlewareList: MiddlewareDescriptor[],
-  handler: (request: DiraHttpRequest) => unknown,
+  handler: (request: TRequest) => unknown,
   contextStore?: ContextStore,
-): (request: DiraHttpRequest) => Promise<Response> {
-  return async (request: DiraHttpRequest): Promise<Response> => {
+): (request: TRequest) => Promise<Response> {
+  return async (request: TRequest): Promise<Response> => {
     // Create or use provided context store
     const store = contextStore ?? createContextStore();
 
@@ -94,10 +94,10 @@ export function composeMiddleware(
  * Creates a no-op middleware chain that just calls the handler.
  * Useful when no middleware is configured.
  */
-export function createPassthroughChain(
-  handler: (request: DiraHttpRequest) => unknown,
-): (request: DiraHttpRequest) => Promise<Response> {
-  return async (request: DiraHttpRequest): Promise<Response> => {
+export function createPassthroughChain<TRequest extends DiraHttpRequest>(
+  handler: (request: TRequest) => unknown,
+): (request: TRequest) => Promise<Response> {
+  return async (request: TRequest): Promise<Response> => {
     const store = createContextStore();
     const requestWithContext = attachContext(request, store);
     const result = handler(requestWithContext);

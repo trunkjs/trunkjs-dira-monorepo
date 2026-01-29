@@ -75,8 +75,12 @@ export function UseMiddleware(
       } else if (context.kind === 'method') {
         // Stage 3 method decorator
         const method = targetOrMethod as Function;
-        context.addInitializer(function (this: object) {
-          setRouteMiddleware(this.constructor, context.name, descriptors);
+        context.addInitializer(function () {
+          setRouteMiddleware(
+            (this as object).constructor,
+            context.name,
+            descriptors,
+          );
         });
         return method;
       }

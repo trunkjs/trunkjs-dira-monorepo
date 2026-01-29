@@ -115,10 +115,12 @@ export class DiraCore<
     const middlewareArray = Array.isArray(middleware)
       ? middleware
       : [middleware];
-    const descriptors: MiddlewareDescriptor[] = middlewareArray.map((mw) => ({
-      middleware: mw as DiraMiddleware,
-      name: options?.name,
-    }));
+    const descriptors: MiddlewareDescriptor[] = middlewareArray.map(
+      (mw) => ({
+        middleware: mw,
+        name: options?.name,
+      }),
+    );
     this.globalMiddleware.push(...descriptors);
     return this;
   }
@@ -158,15 +160,21 @@ export class DiraCore<
       const factory = new HttpRequestDataProvider(rawReq, pathParams);
       const request = new this.RequestClass(factory);
 
+      // Cast request to TRequest - safe because RequestClass is set via setRequestClass<T>
+      const typedRequest = request as TRequest;
+
       // If there's middleware, compose the chain
       if (allMiddleware.length > 0) {
-        const chain = composeMiddleware(allMiddleware, handler);
-        return chain(request);
+        const chain = composeMiddleware(
+          allMiddleware,
+          handler as (request: TRequest) => unknown,
+        );
+        return chain(typedRequest);
       }
 
       // No middleware - direct execution with context attached
       const store = createContextStore();
-      const requestWithContext = attachContext(request, store);
+      const requestWithContext = attachContext(typedRequest, store);
       const result = handler(requestWithContext);
       return wrapResponse(result);
     };
