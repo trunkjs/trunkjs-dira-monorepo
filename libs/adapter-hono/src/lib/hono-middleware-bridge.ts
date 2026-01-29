@@ -96,17 +96,12 @@ export class HonoMiddlewareBridge implements MiddlewareBridge<HonoMiddleware> {
           return response;
         }
 
-        // If next() was called and returned a response, use it
-        if (nextCalled && nextResult) {
-          return nextResult;
-        }
-
-        // If next() was called, continue the chain
+        // If next() was called, return its result (avoid calling next() twice)
         if (nextCalled) {
-          return next();
+          return nextResult!;
         }
 
-        // Fallback: continue the chain (middleware didn't do anything)
+        // Fallback: continue the chain (middleware didn't call next)
         return next();
       } catch (error) {
         // Handle Hono's HTTPException (used by basicAuth, bearerAuth, etc.)
