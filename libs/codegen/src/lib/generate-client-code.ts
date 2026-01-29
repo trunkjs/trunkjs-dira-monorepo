@@ -2,6 +2,7 @@ import ts from 'typescript';
 import type { ExtractedRoute } from './extracted-route';
 import type { TypeReference, TypeImportInfo } from './type-reference';
 import { resolveImportPath } from './resolve-import-path';
+import { toCamelCase } from './name-utils';
 
 const DEFAULT_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const DEFAULT_CLIENT_NAME = 'DiraClient';
@@ -217,14 +218,16 @@ function generateNestedInterface(
   const pad = '  '.repeat(indent);
   const lines: string[] = [];
 
+  const safeSegment = toCamelCase(segments[0]);
+
   if (segments.length === 1) {
-    lines.push(`${pad}${segments[0]}: {`);
+    lines.push(`${pad}${safeSegment}: {`);
     for (const route of routes) {
       lines.push(...generateHandlerType(route, indent + 1, importedTypes));
     }
     lines.push(`${pad}};`);
   } else {
-    lines.push(`${pad}${segments[0]}: {`);
+    lines.push(`${pad}${safeSegment}: {`);
     lines.push(
       ...generateNestedInterface(
         segments.slice(1),
@@ -255,7 +258,8 @@ function generateHandlerType(
     importedTypes,
   );
 
-  lines.push(`${pad}${route.handlerName}: {`);
+  const safeHandlerName = toCamelCase(route.handlerName);
+  lines.push(`${pad}${safeHandlerName}: {`);
   lines.push(`${pad}  $route: RouteMetadata;`);
   for (const method of methods) {
     const m = method.toLowerCase();

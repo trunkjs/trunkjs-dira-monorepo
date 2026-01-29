@@ -192,4 +192,53 @@ describe('generateClientCode', () => {
     // Route should be in the routes map
     expect(code).toContain("path: '/repos/:owner/:repo/files/::path'");
   });
+
+  it('should convert hyphenated controller names to valid identifiers', () => {
+    const code = generateClientCode([
+      makeRoute({
+        controllerName: 'user-management',
+        handlerName: 'getUsers',
+        fullRoute: '/user-management/users',
+        pathParams: [],
+      }),
+    ]);
+    // Should convert user-management to userManagement
+    expect(code).toContain('userManagement: {');
+    expect(code).not.toContain('user-management: {');
+  });
+
+  it('should convert hyphenated handler names to valid identifiers', () => {
+    const code = generateClientCode([
+      makeRoute({
+        controllerName: 'users',
+        handlerName: 'get-by-id',
+        fullRoute: '/users/:id',
+        pathParams: ['id'],
+      }),
+    ]);
+    // Should convert get-by-id to getById
+    expect(code).toContain('getById: {');
+    expect(code).not.toContain('get-by-id: {');
+  });
+
+  it('should convert hyphenated nested controller names to valid identifiers', () => {
+    const code = generateClientCode([
+      makeRoute({
+        controllerName: 'admin-panel.user-management',
+        handlerName: 'list-users',
+        fullRoute: '/admin/users',
+        pathParams: [],
+      }),
+    ]);
+    // Should convert each segment to valid identifiers in the interface
+    expect(code).toContain('adminPanel: {');
+    expect(code).toContain('userManagement: {');
+    expect(code).toContain('listUsers: {');
+    // Should NOT have hyphenated names as unquoted property identifiers
+    expect(code).not.toContain('admin-panel: {');
+    expect(code).not.toContain('user-management: {');
+    expect(code).not.toContain('list-users: {');
+    // But routes map should preserve original names as string keys (for runtime lookup)
+    expect(code).toContain("'admin-panel.user-management.list-users'");
+  });
 });
