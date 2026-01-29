@@ -2,3 +2,5 @@
 .nx
 node_modules
 dist
+
+vitest.config.*.timestamp*

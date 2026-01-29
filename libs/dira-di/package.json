@@ -1,5 +1,5 @@
 {
-  "name": "@dira/dira-core",
+  "name": "@dira/dira-di",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -20,7 +20,5 @@
       }
     }
   },
-  "dependencies": {
-    "@dira/dira-di": "^0.0.1"
-  }
+  "dependencies": {}
 }

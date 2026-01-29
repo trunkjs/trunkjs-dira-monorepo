@@ -19,10 +19,11 @@ class MyFactories extends DiFactory<MyFactories> {
 
 // Usage later in code
 
-const MyRequest =  MyFactories.getRequestPrototype<MyFactories>();
+const MyRequest =  MyFactories.getRequestPrototype<MyFactories>();cccccbrdegtecfdrcgfgcjjjltnlehjnnigtkcjelbkf
 
 
 
+dira.httpRequestPrototype = MyRequest;
 
 
 // Should call MyFactories.customerId once and cache the result
