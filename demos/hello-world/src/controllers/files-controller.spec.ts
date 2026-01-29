@@ -53,15 +53,23 @@ describe('FilesController', () => {
   });
 
   test('captures mixed regular and wildcard params', async () => {
-    const res = await fetch(`${BASE_URL}/files/repos/my-org/my-repo/src/lib/utils.ts`);
+    const res = await fetch(
+      `${BASE_URL}/files/repos/my-org/my-repo/src/lib/utils.ts`,
+    );
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json).toEqual({ owner: 'my-org', repo: 'my-repo', path: 'src/lib/utils.ts' });
+    expect(json).toEqual({
+      owner: 'my-org',
+      repo: 'my-repo',
+      path: 'src/lib/utils.ts',
+    });
   });
 
   test('captures mixed params with special characters in wildcard', async () => {
-    const res = await fetch(`${BASE_URL}/files/repos/acme-corp/web-app/src/components/Button%20Component/index.tsx`);
+    const res = await fetch(
+      `${BASE_URL}/files/repos/acme-corp/web-app/src/components/Button%20Component/index.tsx`,
+    );
     const json = await res.json();
 
     expect(res.status).toBe(200);

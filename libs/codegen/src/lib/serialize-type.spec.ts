@@ -276,8 +276,10 @@ describe('extractTypeReference', () => {
 describe('serializeType depth limiting', () => {
   it('should return unknown for excessively deep nested types', () => {
     // Create a deeply nested type that exceeds MAX_SERIALIZATION_DEPTH (15)
-    const nestedType = Array.from({ length: 20 }, (_, i) => `L${i}`)
-      .reduce((acc, name) => `{ ${name}: ${acc} }`, 'string');
+    const nestedType = Array.from({ length: 20 }, (_, i) => `L${i}`).reduce(
+      (acc, name) => `{ ${name}: ${acc} }`,
+      'string',
+    );
     const { type, checker } = typeFromSource(`type T = ${nestedType};`);
 
     const result = serializeType(type, checker);

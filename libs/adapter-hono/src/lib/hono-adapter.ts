@@ -1,5 +1,10 @@
 import { Hono } from 'hono';
-import type { DiraAdapter, DiraAdapterOptions, RouteRegistration, ServerInfo } from '@dira/dira-core';
+import type {
+  DiraAdapter,
+  DiraAdapterOptions,
+  RouteRegistration,
+  ServerInfo,
+} from '@dira/dira-core';
 
 export class HonoAdapter implements DiraAdapter {
   private server: ReturnType<typeof Bun.serve> | null = null;

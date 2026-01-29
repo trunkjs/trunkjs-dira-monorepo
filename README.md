@@ -11,11 +11,11 @@ bun run --cwd demos/hello-world start
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `@dira/dira-core` | Framework core with decorator and imperative APIs |
-| `@dira/adapter-hono` | Hono-based HTTP adapter |
-| `@dira/codegen` | TypeScript client SDK generator |
+| Package              | Description                                       |
+| -------------------- | ------------------------------------------------- |
+| `@dira/dira-core`    | Framework core with decorator and imperative APIs |
+| `@dira/adapter-hono` | Hono-based HTTP adapter                           |
+| `@dira/codegen`      | TypeScript client SDK generator                   |
 
 ## Development
 

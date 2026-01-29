@@ -173,7 +173,9 @@ describe('generateClientCode', () => {
     // Should include check for wildcard params
     expect(code).toContain("if (url.includes('::' + key))");
     // Should encode each segment but preserve slashes for wildcards
-    expect(code).toContain("value.split('/').map(s => encodeURIComponent(s)).join('/')");
+    expect(code).toContain(
+      "value.split('/').map(s => encodeURIComponent(s)).join('/')",
+    );
     // Should replace ::key for wildcards
     expect(code).toContain("url.replace('::' + key, encoded)");
     // Should still handle regular :key params
@@ -188,7 +190,9 @@ describe('generateClientCode', () => {
       }),
     ]);
     // Should require all params
-    expect(code).toContain('params: { owner: string; repo: string; path: string }');
+    expect(code).toContain(
+      'params: { owner: string; repo: string; path: string }',
+    );
     // Route should be in the routes map
     expect(code).toContain("path: '/repos/:owner/:repo/files/::path'");
   });

@@ -92,16 +92,14 @@ export function generateClientCode(
   lines.push(
     `    for (const [key, value] of Object.entries(options.params as Record<string, string>)) {`,
   );
-  lines.push(`      // Handle wildcard params (::key) - encode each segment but preserve slashes`);
   lines.push(
-    `      if (url.includes('::' + key)) {`,
+    `      // Handle wildcard params (::key) - encode each segment but preserve slashes`,
   );
+  lines.push(`      if (url.includes('::' + key)) {`);
   lines.push(
     `        const encoded = value.split('/').map(s => encodeURIComponent(s)).join('/');`,
   );
-  lines.push(
-    `        url = url.replace('::' + key, encoded);`,
-  );
+  lines.push(`        url = url.replace('::' + key, encoded);`);
   lines.push(`      } else {`);
   lines.push(`        // Handle regular params (:key)`);
   lines.push(
