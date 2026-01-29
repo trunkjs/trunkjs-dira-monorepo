@@ -48,6 +48,10 @@
       "name": "05-adapter-agnostic",
       "version": "0.0.1",
     },
+    "demos/06-middleware": {
+      "name": "06-middleware",
+      "version": "0.0.1",
+    },
     "libs/adapter-bun": {
       "name": "@dira/adapter-bun",
       "version": "0.0.1",
@@ -109,6 +113,8 @@
     "04-full-app": ["04-full-app@workspace:demos/04-full-app"],
 
     "05-adapter-agnostic": ["05-adapter-agnostic@workspace:demos/05-adapter-agnostic"],
+
+    "06-middleware": ["06-middleware@workspace:demos/06-middleware"],
 
     "@babel/code-frame": ["@babel/code-frame@7.28.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q=="],
 
