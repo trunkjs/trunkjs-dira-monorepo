@@ -142,10 +142,8 @@ function hasExportModifier(symbol: ts.Symbol): boolean {
 }
 
 /**
- * Converts a `ts.Type` into its string representation for code generation.
- * Handles primitives, literals, unions, intersections, arrays, object types,
- * and unwraps `Promise<T>`. Uses a `visited` set to handle circular references
- * and a depth limit to prevent stack overflow on deeply nested types.
+ * Serializes a TypeScript type to its string representation.
+ * Handles primitives, literals, unions, intersections, arrays, objects, and unwraps `Promise<T>`.
  */
 export function serializeType(
   type: ts.Type,

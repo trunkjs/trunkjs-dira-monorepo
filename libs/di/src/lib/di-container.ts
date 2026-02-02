@@ -56,7 +56,7 @@ export abstract class DiContainer {
    * Creates an instance of a class, automatically injecting its dependencies.
    *
    * For classes decorated with `@Injectable()`, properties marked with
-   * `@Inject("token")` are automatically resolved from this container.
+   * `@Inject('token')` are automatically resolved from this container.
    *
    * For singleton-scoped injectables, the same instance is returned on subsequent calls.
    *

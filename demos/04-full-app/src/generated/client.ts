@@ -116,9 +116,7 @@ export interface FullAppClient {
   customers: {
     list: {
       $route: RouteMetadata;
-      $get(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $get(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           customers: {
             id: string;
@@ -167,37 +165,27 @@ export interface FullAppClient {
     };
     me: {
       $route: RouteMetadata;
-      $get(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $get(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           user: { id: string; name: string; role: 'admin' | 'user' };
         }>
       >;
-      $post(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $post(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           user: { id: string; name: string; role: 'admin' | 'user' };
         }>
       >;
-      $put(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $put(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           user: { id: string; name: string; role: 'admin' | 'user' };
         }>
       >;
-      $patch(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $patch(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           user: { id: string; name: string; role: 'admin' | 'user' };
         }>
       >;
-      $delete(options?: {
-        headers?: HeadersInit;
-      }): Promise<
+      $delete(options?: { headers?: HeadersInit }): Promise<
         TypedResponse<{
           user: { id: string; name: string; role: 'admin' | 'user' };
         }>

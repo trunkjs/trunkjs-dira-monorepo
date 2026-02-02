@@ -1,4 +1,4 @@
-import { DiraController, DiraHttp, type DiraRequest } from '@dira/core';
+import { DiraController, DiraHttp, type DiraHttpRequest } from '@dira/core';
 
 @DiraController('/methods')
 export class MethodsController {
@@ -28,7 +28,7 @@ export class MethodsController {
   }
 
   @DiraHttp('/any-method')
-  anyMethod(req: DiraRequest): { method: string } {
+  anyMethod(req: DiraHttpRequest): { method: string } {
     return { method: req.method };
   }
 }

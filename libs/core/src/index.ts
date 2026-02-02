@@ -22,3 +22,6 @@ export * from './lib/validate-route-name';
 export * from './lib/convert-route-for-adapter';
 export type * from './lib/types/extract-params';
 export type * from './lib/types/handler-return';
+export type * from './lib/types/request-augmentation';
+export * from './lib/middleware';
+export type * from './lib/register-handler-options';

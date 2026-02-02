@@ -1,4 +1,4 @@
-import { isStage3Decorator } from './decorator-utils';
+import { isStage3Decorator } from '@dira/common';
 
 /**
  * String token used to identify dependencies for injection.

@@ -13,12 +13,8 @@
     },
     "./package.json": "./package.json"
   },
-  "nx": {
-    "targets": {
-      "test": {
-        "command": "bun test"
-      }
-    }
+  "scripts": {
+    "test": "bun test"
   },
   "dependencies": {
     "@dira/common": "*",

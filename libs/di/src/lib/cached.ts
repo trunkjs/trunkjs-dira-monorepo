@@ -1,5 +1,4 @@
-import { DiraError } from '@dira/common';
-import { isStage3Decorator } from './decorator-utils';
+import { DiraError, isStage3Decorator } from '@dira/common';
 
 /**
  * Decorator that caches the result of a getter.

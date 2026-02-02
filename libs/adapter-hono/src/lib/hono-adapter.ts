@@ -1,16 +1,34 @@
-import type { Context, Hono as HonoType } from 'hono';
+import type { Context } from 'hono';
 import { Hono } from 'hono';
 import type {
   DiraAdapter,
   DiraAdapterOptions,
   HttpMethod,
+  MiddlewareBridge,
   RouteRegistration,
   ServerInfo,
 } from '@dira/core';
+import {
+  HonoMiddlewareBridge,
+  type HonoMiddleware,
+} from './hono-middleware-bridge';
 
-type HonoMethodName = Lowercase<HttpMethod>;
+type HonoMethodName = Uppercase<HttpMethod>;
 
 export class HonoAdapter implements DiraAdapter {
+  /**
+   * Bridge for converting Hono middleware to Dira middleware.
+   * Use this to integrate Hono ecosystem middleware (cors, compress, etc.) with Dira.
+   *
+   * @example
+   * import { cors } from 'hono/cors';
+   *
+   * const adapter = new HonoAdapter();
+   * const dira = new DiraCore()
+   *   .use(adapter.middlewareBridge.bridge(cors()));
+   */
+  readonly middlewareBridge: MiddlewareBridge<HonoMiddleware> =
+    new HonoMiddlewareBridge();
   private server: ReturnType<typeof Bun.serve> | null = null;
 
   /** The port the server is listening on (available after start()) */
@@ -36,10 +54,10 @@ export class HonoAdapter implements DiraAdapter {
         // No methods specified - match all
         app.all(route, wrappedHandler);
       } else {
-        // Register each allowed method using Hono's native method routing
+        // Register each allowed method using Hono's on() method
         for (const method of methods) {
-          const methodName = method.toLowerCase() as HonoMethodName;
-          (app[methodName] as HonoType['get'])(route, wrappedHandler);
+          const methodName = method.toUpperCase() as HonoMethodName;
+          app.on(methodName, route, wrappedHandler);
         }
         // Fallback: return 405 for any other method on this route
         app.all(route, () => {
@@ -60,8 +78,8 @@ export class HonoAdapter implements DiraAdapter {
       fetch: app.fetch,
     });
 
-    const actualPort = this.server.port;
-    const actualHostname = this.server.hostname;
+    const actualPort = this.server.port ?? port;
+    const actualHostname = this.server.hostname ?? hostname;
 
     console.log(`Server running at http://${actualHostname}:${actualPort}`);
 

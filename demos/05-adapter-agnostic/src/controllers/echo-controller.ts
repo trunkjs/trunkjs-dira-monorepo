@@ -1,23 +1,23 @@
-import { DiraController, DiraHttp, type DiraRequest } from '@dira/core';
+import { DiraController, DiraHttp, type DiraHttpRequest } from '@dira/core';
 
 @DiraController('/echo')
 export class EchoController {
   @DiraHttp('/message', { method: 'GET' })
-  getMessage(req: DiraRequest): { method: string; path: string } {
+  getMessage(req: DiraHttpRequest): { method: string; path: string } {
     return { method: req.method, path: '/echo/message' };
   }
 
   @DiraHttp('/message', { method: 'POST' })
-  postMessage(req: DiraRequest<{ text: string }>): {
+  async postMessage(req: DiraHttpRequest<{ text: string }>): Promise<{
     method: string;
     text: string;
-  } {
-    const body = req.body;
+  }> {
+    const body = await req.json();
     return { method: req.method, text: body.text };
   }
 
   @DiraHttp('/query', { method: 'GET' })
-  getWithQuery(req: DiraRequest<unknown, { name: string; count: string }>): {
+  getWithQuery(req: DiraHttpRequest<unknown, { name: string; count: string }>): {
     name: string;
     count: number;
   } {

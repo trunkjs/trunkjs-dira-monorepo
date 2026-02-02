@@ -1,5 +1,5 @@
 import { DiraController, DiraHttp, handler } from '@dira/core';
-import type { DiraRequest } from '@dira/core';
+import type { DiraHttpRequest } from '@dira/core';
 
 // Exported types - should be importable
 export interface CreateUserBody {
@@ -24,7 +24,7 @@ interface PrivateBody {
 @DiraController('/users', { name: 'users' })
 export class ExportedTypesController {
   @DiraHttp('/create', { method: 'POST' })
-  async createUser(req: DiraRequest<CreateUserBody>) {
+  async createUser(req: DiraHttpRequest<CreateUserBody>) {
     const body = await req.json();
     return { id: '1', name: body.name, email: body.email };
   }
@@ -37,14 +37,14 @@ export class ExportedTypesController {
 
   // Uses private (non-exported) type - should inline
   @DiraHttp('/private', { method: 'POST' })
-  async privateEndpoint(req: DiraRequest<PrivateBody>) {
+  async privateEndpoint(req: DiraHttpRequest<PrivateBody>) {
     const body = await req.json();
     return { received: body.secret };
   }
 
   // Uses inline anonymous type - should inline
   @DiraHttp('/inline', { method: 'POST' })
-  async inlineEndpoint(req: DiraRequest<{ foo: string; bar: number }>) {
+  async inlineEndpoint(req: DiraHttpRequest<{ foo: string; bar: number }>) {
     const body = await req.json();
     return { foo: body.foo, bar: body.bar };
   }
