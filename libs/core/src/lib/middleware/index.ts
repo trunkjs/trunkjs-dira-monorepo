@@ -23,7 +23,8 @@ export {
 } from './middleware-storage';
 
 // Decorator
-export { UseMiddleware, type UseMiddlewareOptions } from './use-middleware';
+export { UseMiddleware } from './use-middleware';
+export type { UseMiddlewareOptions } from '../use-middleware-options';
 
 // Executor
 export {

@@ -4,12 +4,7 @@ import {
   setControllerMiddleware,
   setRouteMiddleware,
 } from './middleware-storage';
-
-/** Options for the @UseMiddleware decorator. */
-export interface UseMiddlewareOptions {
-  /** Optional name for debugging/logging. */
-  name?: string;
-}
+import type { UseMiddlewareOptions } from '../use-middleware-options';
 
 /**
  * Decorator that attaches middleware to a controller class or method.
