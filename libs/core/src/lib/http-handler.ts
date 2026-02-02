@@ -1,6 +1,7 @@
 import type { DiraHttpRequest } from './request/dira-http-request';
 import type { ExtractParams } from './types/extract-params';
 import type { HandlerReturn } from './types/handler-return';
+import type { WithParams } from './types/request-augmentation';
 
 /**
  * Low-level handler type used internally by RouteRegistration and adapters.
@@ -46,5 +47,5 @@ export type DiraHandler<
   TReturn = unknown,
   TRequest extends DiraHttpRequest = DiraHttpRequest,
 > = (
-  req: TRequest & { params: ExtractParams<TRoute> },
+  req: WithParams<TRequest, ExtractParams<TRoute>>,
 ) => HandlerReturn<TReturn>;

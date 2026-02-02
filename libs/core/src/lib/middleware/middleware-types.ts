@@ -1,4 +1,5 @@
 import type { DiraHttpRequest } from '../request/dira-http-request';
+import type { WithContext } from '../types/request-augmentation';
 
 /** Function to call the next middleware or handler in the chain. */
 export type MiddlewareNext = () => Promise<Response>;
@@ -32,7 +33,7 @@ export type DiraMiddleware<
   TContextOut extends TContextIn = TContextIn,
   TRequest extends DiraHttpRequest = DiraHttpRequest,
 > = (
-  request: TRequest & { ctx: TContextIn & Partial<TContextOut> },
+  request: WithContext<TRequest, TContextIn & Partial<TContextOut>>,
   next: MiddlewareNext,
 ) => Promise<Response> | Response;
 
