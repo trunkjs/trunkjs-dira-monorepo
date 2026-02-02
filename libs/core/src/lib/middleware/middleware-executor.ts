@@ -12,10 +12,7 @@ import type {
   MiddlewareNext,
 } from './middleware-types';
 
-/**
- * Checks if a middleware is a factory function (takes only request, returns middleware).
- * Factory functions have exactly 1 parameter (the request).
- */
+/** Checks if a middleware is a factory function (has exactly 1 parameter). */
 function isMiddlewareFactory(
   fn: DiraMiddleware | DiraMiddlewareFactory,
 ): fn is DiraMiddlewareFactory {

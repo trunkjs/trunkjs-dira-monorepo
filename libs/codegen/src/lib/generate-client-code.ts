@@ -27,9 +27,8 @@ interface ImportCollection {
 }
 
 /**
- * Generates a self-contained TypeScript client file from extracted route metadata.
- * The output includes runtime helpers, typed interfaces, and a `createClient` factory.
- * Uses a Proxy-based implementation to avoid duplicating the nested structure.
+ * Generates a self-contained TypeScript client file with runtime helpers,
+ * typed interfaces, and a `createClient` factory.
  */
 export function generateClientCode(
   routes: ExtractedRoute[],
@@ -92,16 +91,12 @@ export function generateClientCode(
   lines.push(
     `    for (const [key, value] of Object.entries(options.params as Record<string, string>)) {`,
   );
-  lines.push(
-    `      // Handle wildcard params (::key) - encode each segment but preserve slashes`,
-  );
   lines.push(`      if (url.includes('::' + key)) {`);
   lines.push(
     `        const encoded = value.split('/').map(s => encodeURIComponent(s)).join('/');`,
   );
   lines.push(`        url = url.replace('::' + key, encoded);`);
   lines.push(`      } else {`);
-  lines.push(`        // Handle regular params (:key)`);
   lines.push(
     `        url = url.replace(\`:$\{key}\`, encodeURIComponent(value));`,
   );

@@ -1,10 +1,6 @@
 import type { DiraMiddleware, MiddlewareBridge } from '@dira/core';
 
-/**
- * Bun-style middleware signature.
- * Since Bun doesn't have a native middleware pattern, this defines a simple
- * request/next/response pattern similar to other frameworks.
- */
+/** Bun-style middleware signature (request/next/response pattern). */
 export type BunMiddleware = (
   request: Request,
   next: () => Promise<Response>,
