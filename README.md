@@ -105,6 +105,42 @@ graph TB
 | `@dira/adapter-bun` | Native Bun.serve() adapter with middleware bridge |
 | `@dira/codegen` | TypeScript client SDK generator |
 
+### Middlewares
+
+| Package | Description |
+|---------|-------------|
+| `@dira/serve-static` | Static file serving with caching, ETags, and security |
+
+#### Static File Serving
+
+```typescript
+import { createStaticHandler } from '@dira/serve-static';
+
+const dira = new DiraCore()
+  // Register API routes first
+  .registerController(new ApiController())
+  // Serve static files as catch-all (must be after specific routes)
+  .registerHandler(
+    '/::path',
+    createStaticHandler({
+      root: './public',
+      index: ['index.html'],
+      cache: {
+        maxAge: 3600,       // Cache-Control max-age in seconds
+        etag: true,         // Generate ETags for conditional requests
+        lastModified: true, // Send Last-Modified header
+      },
+    }),
+    { method: 'get', name: 'static' },
+  );
+```
+
+Features:
+- Automatic MIME type detection with custom override support
+- ETag and Last-Modified caching with 304 responses
+- Path traversal protection (null bytes, encoded sequences)
+- Index file serving for directories
+
 ## Request Flow
 
 ```mermaid
@@ -241,6 +277,7 @@ const user = await api.users.getUser.$get({ params: { id: '123' } });
 | `04-full-app` | Production-like app with codegen, middleware, and e2e tests |
 | `05-adapter-agnostic` | Same app running on both Hono and Bun adapters |
 | `06-middleware` | Advanced middleware patterns with typed context |
+| `07-static-files` | Static file serving with API and e2e tests |
 
 Run any demo:
 

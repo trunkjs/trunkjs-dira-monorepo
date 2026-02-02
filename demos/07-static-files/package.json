@@ -1,0 +1,11 @@
+{
+  "name": "07-static-files",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "test": "bun test src/",
+    "test:e2e": "playwright test"
+  }
+}

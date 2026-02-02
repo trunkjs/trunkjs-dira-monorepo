@@ -27,3 +27,9 @@ jobs:
 
       - name: Build
         run: bunx nx run-many -t build
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: bunx nx run-many -t test:e2e

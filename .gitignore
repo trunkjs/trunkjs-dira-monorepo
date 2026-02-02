@@ -1,6 +1,26 @@
+# IDE
 .idea
+.vscode
+
+# Nx
 .nx
+
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 
+# Vitest
 vitest.config.*.timestamp*
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+.last-run.json
+
+# OS
+.DS_Store
+
+# Logs
+*.log

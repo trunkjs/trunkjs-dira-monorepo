@@ -19,6 +19,9 @@ bunx nx run @dira/core:test
 bunx nx run @dira/codegen:test
 bunx nx run 04-full-app:test
 
+# Run Playwright e2e tests (static files demo)
+bun run --cwd demos/07-static-files test:e2e
+
 # Build all projects
 bunx nx run-many -t build
 
@@ -48,13 +51,17 @@ libs/
 ├── adapter-bun/   # Native Bun.serve() adapter
 └── codegen/       # TypeScript client SDK generator
 
+middlewares/
+└── serve-static/  # Static file serving middleware
+
 demos/
 ├── 01-minimal/           # Simplest Dira app
 ├── 02-http-features/     # Routes, params, queries, bodies
 ├── 03-dependency-injection/  # DI system showcase
 ├── 04-full-app/          # Production-like app with codegen
 ├── 05-adapter-agnostic/  # Same app on different adapters
-└── 06-middleware/        # Advanced middleware patterns
+├── 06-middleware/        # Advanced middleware patterns
+└── 07-static-files/      # Static file serving demo
 ```
 
 ### Core Components
@@ -100,6 +107,28 @@ Without explicit names, names are derived from the class/method names (e.g., `Ad
 - Generates a self-contained `.ts` file with `createClient(baseUrl)` factory producing `api.controllerName.handlerName.$method({ body?, query?, params? })` calls
 - Return types are unwrapped from `Promise<T>` and `HandlerReturn<T>` unions (filtering `Response`, `void`, `null`)
 - **Type imports**: With `importTypes: true`, imports named exported types instead of inlining their structure, enabling IDE "go-to-definition" and reducing duplication. Falls back to inline for non-exported or anonymous types. Supports tsconfig path aliases.
+
+**@dira/serve-static** - Static file serving middleware:
+
+- `serveStatic(options)` - Middleware for serving static files from a directory
+- `createStaticHandler(options)` - Handler factory for catch-all route registration
+- Automatic MIME type detection with custom override support
+- ETag and Last-Modified based caching with conditional requests (304)
+- Path traversal protection with null byte and encoded sequence handling
+- Index file serving for directories
+- Configurable Cache-Control headers
+
+```typescript
+import { createStaticHandler } from '@dira/serve-static';
+
+// Register as catch-all route (after specific routes)
+const dira = new DiraCore()
+  .registerController(ApiController)
+  .registerHandler('/::path', createStaticHandler({
+    root: './public',
+    cache: { maxAge: 3600 },
+  }), { method: 'get', name: 'static' });
+```
 
 ### Data Flow
 
