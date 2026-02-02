@@ -1,35 +1,29 @@
 import { describe, expect, it, afterEach } from 'bun:test';
-import { resolve } from 'node:path';
-import { DiraCore } from '@dira/core';
 import { HonoAdapter } from '@dira/adapter-hono';
-import { createStaticHandler } from '@dira/serve-static';
-import { ApiController } from './controllers/api-controller';
+import { BunAdapter } from '@dira/adapter-bun';
+import type { DiraAdapter } from '@dira/core';
+import { createApp } from './create-app';
 
-describe('07-static-files demo', () => {
-  let adapter: HonoAdapter;
+/**
+ * Unit tests that verify the static file demo works with both adapters.
+ * This ensures the @dira/serve-static middleware is adapter-agnostic.
+ */
+
+describe.each([
+  { name: 'HonoAdapter', createAdapter: () => new HonoAdapter() },
+  { name: 'BunAdapter', createAdapter: () => new BunAdapter() },
+])('07-static-files demo ($name)', ({ createAdapter }) => {
+  let adapter: DiraAdapter;
 
   afterEach(() => {
     adapter?.stop();
   });
 
   async function createServer() {
-    const publicDir = resolve(import.meta.dirname, '../public');
-
-    const dira = new DiraCore()
-      .registerController(new ApiController())
-      .registerHandler(
-        '/::path',
-        createStaticHandler({
-          root: publicDir,
-          cache: { maxAge: 3600 },
-        }),
-        { method: 'get', name: 'static' },
-      );
-
-    adapter = new HonoAdapter();
+    const dira = createApp();
+    adapter = createAdapter();
     await dira.run(adapter, { port: 0 });
     const baseUrl = `http://${adapter.hostname}:${adapter.port}`;
-    console.log(`Server running at ${baseUrl}`);
     return baseUrl;
   }
 
@@ -92,11 +86,9 @@ describe('07-static-files demo', () => {
     expect(data.status).toBe('ok');
   });
 
-  it('returns 404 for non-existent static files (fallthrough to next)', async () => {
+  it('returns 404 for non-existent static files', async () => {
     const baseUrl = await createServer();
     const response = await fetch(`${baseUrl}/nonexistent.txt`);
-    // With fallthrough enabled, the request goes to next middleware
-    // Since there's no matching route, the adapter returns 404
     expect(response.status).toBe(404);
   });
 });

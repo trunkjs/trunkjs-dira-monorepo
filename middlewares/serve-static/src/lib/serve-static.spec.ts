@@ -2,8 +2,8 @@ import { describe, expect, it, beforeAll, afterAll } from 'bun:test';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { serveStatic } from './serve-static';
-import type { DiraMiddleware, MiddlewareNext } from '@dira/core';
+import { serveStatic, createStaticHandler } from './serve-static';
+import type { DiraMiddleware, MiddlewareNext, DiraHttpRequest } from '@dira/core';
 
 // Helper to create a mock request
 function createMockRequest(
@@ -388,6 +388,163 @@ describe('serveStatic', () => {
       expect(await response.text()).toBe('<html>default</html>');
 
       await rm(join(testDir, 'default.html'));
+    });
+  });
+});
+
+// Helper to create mock DiraHttpRequest for createStaticHandler
+function createMockDiraRequest(
+  path: string,
+  method = 'GET',
+  headers: Record<string, string> = {},
+  params: Record<string, string> = {},
+): DiraHttpRequest {
+  return {
+    method,
+    url: `http://localhost${path}`,
+    headers: new Headers(headers),
+    params,
+  } as unknown as DiraHttpRequest;
+}
+
+describe('createStaticHandler', () => {
+  let testDir: string;
+
+  beforeAll(async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'static-handler-test-'));
+    await writeFile(join(testDir, 'index.html'), '<html>index</html>');
+    await writeFile(join(testDir, 'style.css'), 'body {}');
+    await mkdir(join(testDir, 'assets'));
+    await writeFile(join(testDir, 'assets', 'app.js'), 'console.log("app")');
+  });
+
+  afterAll(async () => {
+    await rm(testDir, { recursive: true, force: true });
+  });
+
+  describe('basic file serving', () => {
+    it('serves file from root using URL pathname', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(createMockDiraRequest('/style.css'));
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('body {}');
+    });
+
+    it('serves index.html for root path', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(createMockDiraRequest('/'));
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('<html>index</html>');
+    });
+  });
+
+  describe('wildcard path param support', () => {
+    it('uses params.path when available', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      // Simulate /static/::path route with request to /static/assets/app.js
+      const response = await handler(
+        createMockDiraRequest('/static/assets/app.js', 'GET', {}, { path: 'assets/app.js' }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('console.log("app")');
+    });
+
+    it('uses params.path for root with empty string', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      // Simulate /::path route with request to /
+      const response = await handler(
+        createMockDiraRequest('/', 'GET', {}, { path: '' }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('<html>index</html>');
+    });
+
+    it('falls back to URL pathname when no params.path', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      // No params provided
+      const response = await handler(createMockDiraRequest('/style.css'));
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('body {}');
+    });
+  });
+
+  describe('fallthrough behavior', () => {
+    it('returns 404 for non-existent file by default', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(createMockDiraRequest('/nonexistent.txt'));
+
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe('Not Found');
+    });
+
+    it('returns empty 404 with fallthrough: true', async () => {
+      const handler = createStaticHandler({ root: testDir, fallthrough: true });
+      const response = await handler(createMockDiraRequest('/nonexistent.txt'));
+
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe('');
+    });
+
+    it('returns 405 for POST without fallthrough', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(createMockDiraRequest('/style.css', 'POST'));
+
+      expect(response.status).toBe(405);
+    });
+
+    it('returns empty 404 for POST with fallthrough', async () => {
+      const handler = createStaticHandler({ root: testDir, fallthrough: true });
+      const response = await handler(createMockDiraRequest('/style.css', 'POST'));
+
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe('');
+    });
+  });
+
+  describe('security', () => {
+    it('blocks path traversal', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(
+        createMockDiraRequest('/%2e%2e%2f%2e%2e%2fetc%2fpasswd'),
+      );
+
+      expect(response.status).toBe(403);
+    });
+
+    it('blocks null byte injection', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(
+        createMockDiraRequest('/style.css%00.txt'),
+      );
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  describe('caching', () => {
+    it('includes ETag and Last-Modified by default', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const response = await handler(createMockDiraRequest('/style.css'));
+
+      expect(response.headers.get('ETag')).toMatch(/^W\/".+"$/);
+      expect(response.headers.get('Last-Modified')).toBeTruthy();
+    });
+
+    it('returns 304 for matching ETag', async () => {
+      const handler = createStaticHandler({ root: testDir });
+      const first = await handler(createMockDiraRequest('/style.css'));
+      const etag = first.headers.get('ETag')!;
+
+      const second = await handler(
+        createMockDiraRequest('/style.css', 'GET', { 'If-None-Match': etag }),
+      );
+
+      expect(second.status).toBe(304);
     });
   });
 });

@@ -113,6 +113,10 @@ export function serveStatic(options: ServeStaticOptions): DiraMiddleware {
  * This is useful when you need to register static file serving as a catch-all
  * route handler rather than as middleware.
  *
+ * When registered with a wildcard route like `/::path` or `/static/::path`,
+ * the handler automatically uses the captured path segment. For root catch-all
+ * routes, it uses the full URL pathname.
+ *
  * @param options - Configuration options for static file serving
  * @returns Handler function that can be used with registerHandler
  *
@@ -125,8 +129,12 @@ export function serveStatic(options: ServeStaticOptions): DiraMiddleware {
  *   .registerController(ApiController)
  *   .registerHandler('/::path', createStaticHandler({
  *     root: './public',
- *     fallthrough: false,
- *   }), { method: 'get' });
+ *   }), { method: 'get', name: 'static' });
+ *
+ * // Or with a prefix (the handler uses the captured ::path segment)
+ * dira.registerHandler('/static/::path', createStaticHandler({
+ *   root: './public',
+ * }), { method: 'get', name: 'static' });
  * ```
  */
 export function createStaticHandler(
@@ -134,6 +142,7 @@ export function createStaticHandler(
 ): StaticHandler {
   const root = resolve(options.root);
   const indexFiles = options.index ?? ['index.html'];
+  const fallthrough = options.fallthrough ?? false;
   const cacheOptions = {
     etag: true,
     lastModified: true,
@@ -145,11 +154,16 @@ export function createStaticHandler(
 
     // Only handle GET and HEAD requests
     if (method !== 'GET' && method !== 'HEAD') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return fallthrough
+        ? new Response(null, { status: 404 })
+        : new Response('Method Not Allowed', { status: 405 });
     }
 
-    const url = new URL(request.url);
-    const pathname = url.pathname;
+    // Use captured wildcard path if available (e.g., from /::path or /static/::path)
+    // Otherwise fall back to the full URL pathname
+    const params = request.params as Record<string, string> | undefined;
+    const capturedPath = params?.path;
+    const pathname = capturedPath !== undefined ? '/' + capturedPath : new URL(request.url).pathname;
 
     // Resolve safe path (prevents directory traversal)
     const filePath = resolveSafePath(root, pathname);
@@ -173,7 +187,9 @@ export function createStaticHandler(
     }
 
     // File not found
-    return new Response('Not Found', { status: 404 });
+    return fallthrough
+      ? new Response(null, { status: 404 })
+      : new Response('Not Found', { status: 404 });
   };
 }
 

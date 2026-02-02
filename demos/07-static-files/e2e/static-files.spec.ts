@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * These tests run against both Hono and Bun adapters via Playwright projects.
+ * This verifies the @dira/serve-static middleware is truly adapter-agnostic.
+ *
+ * The test project name (hono/bun) is available via test.info().project.name
+ */
+
 test.describe('Static File Serving E2E', () => {
   test('serves HTML page correctly', async ({ page }) => {
     await page.goto('/');

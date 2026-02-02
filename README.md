@@ -113,27 +113,57 @@ graph TB
 
 #### Static File Serving
 
+The `@dira/serve-static` package provides two patterns for serving static files:
+
+**Pattern 1: Handler (Recommended)** - Register as a catch-all route after API routes:
+
 ```typescript
 import { createStaticHandler } from '@dira/serve-static';
 
 const dira = new DiraCore()
-  // Register API routes first
+  // Register API routes first (more specific)
   .registerController(new ApiController())
-  // Serve static files as catch-all (must be after specific routes)
+  // Serve static files as catch-all (must be AFTER specific routes)
   .registerHandler(
     '/::path',
     createStaticHandler({
       root: './public',
       index: ['index.html'],
-      cache: {
-        maxAge: 3600,       // Cache-Control max-age in seconds
-        etag: true,         // Generate ETags for conditional requests
-        lastModified: true, // Send Last-Modified header
-      },
+      cache: { maxAge: 3600 },
     }),
     { method: 'get', name: 'static' },
   );
 ```
+
+You can also serve files under a prefix:
+
+```typescript
+// Serve files at /static/* from ./public
+dira.registerHandler(
+  '/static/::path',
+  createStaticHandler({ root: './public' }),
+  { method: 'get', name: 'static' },
+);
+```
+
+**Pattern 2: Middleware** - Runs on all routes with prefix filtering:
+
+```typescript
+import { serveStatic } from '@dira/serve-static';
+
+const dira = new DiraCore()
+  // Middleware runs before route matching
+  .use(serveStatic({
+    root: './public',
+    prefix: '/static',  // Only serve files under /static/*
+    fallthrough: true,  // Pass to next handler if file not found
+  }))
+  .registerController(new ApiController());
+```
+
+**When to use each pattern:**
+- **Handler pattern**: Best for SPAs and typical web apps where static files are a fallback
+- **Middleware pattern**: Best when you need static files checked before any route matching
 
 Features:
 - Automatic MIME type detection with custom override support

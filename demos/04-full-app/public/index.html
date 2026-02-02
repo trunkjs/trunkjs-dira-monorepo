@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dira Full App Demo</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <main>
+    <h1>Dira Full App Demo</h1>
+    <p>A production-like Dira application with API routes and static files.</p>
+
+    <h2>Features</h2>
+    <ul>
+      <li>Decorator-based controllers with auto-discovery</li>
+      <li>Dependency injection with request-scoped services</li>
+      <li>Type-safe generated client SDK</li>
+      <li>Static file serving with caching</li>
+      <li>Error handling middleware</li>
+    </ul>
+
+    <h2>API Health Check</h2>
+    <pre><code id="health-response">Loading...</code></pre>
+
+    <h2>API Endpoints</h2>
+    <ul>
+      <li><code>GET /health</code> - Health check</li>
+      <li><code>POST /auth/login</code> - User login</li>
+      <li><code>GET /customers</code> - List customers</li>
+      <li><code>GET /customers/:id</code> - Get customer by ID</li>
+    </ul>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
