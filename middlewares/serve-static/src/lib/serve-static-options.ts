@@ -16,12 +16,14 @@ export interface ServeStaticOptions {
   prefix?: string;
   /** Index files to serve for directory requests. Default: ['index.html'] */
   index?: string[];
-  /** Enable directory listing when no index file exists. Default: false */
-  directoryListing?: boolean;
   /** Cache configuration. */
   cache?: CacheOptions;
   /** Custom MIME type overrides by extension (e.g., { '.wasm': 'application/wasm' }). */
   mimeTypes?: Record<string, string>;
-  /** Pass to next middleware if file not found. Default: true */
+  /**
+   * Pass to next middleware/handler if file not found.
+   * - For `serveStatic` middleware: Default is `true` (pass to next handler)
+   * - For `createStaticHandler`: Default is `false` (return 404 response)
+   */
   fallthrough?: boolean;
 }

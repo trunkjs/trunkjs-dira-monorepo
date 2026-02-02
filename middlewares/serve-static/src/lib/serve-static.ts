@@ -24,8 +24,10 @@ export type StaticHandler = (request: DiraHttpRequest) => Promise<Response>;
  * - Index file serving for directories
  *
  * When used with `dira.use()`, it runs as middleware on all routes.
- * The `fallthrough` option (default: true) allows requests for non-existent
- * files to continue to subsequent handlers.
+ *
+ * **Note on `fallthrough`:** This function defaults `fallthrough` to `true`,
+ * meaning requests for non-existent files pass to the next middleware/handler.
+ * This differs from `createStaticHandler` which defaults to `false`.
  *
  * @param options - Configuration options for static file serving
  * @returns Dira middleware function
@@ -95,7 +97,6 @@ export function serveStatic(options: ServeStaticOptions): DiraMiddleware {
       request.headers,
       cacheOptions,
       options.mimeTypes,
-      options.directoryListing ?? false,
     );
 
     if (result) {
@@ -117,7 +118,12 @@ export function serveStatic(options: ServeStaticOptions): DiraMiddleware {
  * the handler automatically uses the captured path segment. For root catch-all
  * routes, it uses the full URL pathname.
  *
- * @param options - Configuration options for static file serving
+ * **Note on `fallthrough`:** This function defaults `fallthrough` to `false`,
+ * meaning non-existent files return a 404 response. This differs from
+ * `serveStatic` middleware which defaults to `true`. Set `fallthrough: true`
+ * to return an empty 404 that signals to the framework to try other routes.
+ *
+ * @param options - Configuration options for static file serving (prefix is not supported)
  * @returns Handler function that can be used with registerHandler
  *
  * @example
@@ -161,9 +167,12 @@ export function createStaticHandler(
 
     // Use captured wildcard path if available (e.g., from /::path or /static/::path)
     // Otherwise fall back to the full URL pathname
-    const params = request.params as Record<string, string> | undefined;
-    const capturedPath = params?.path;
-    const pathname = capturedPath !== undefined ? '/' + capturedPath : new URL(request.url).pathname;
+    const capturedPath =
+      request.params && typeof request.params === 'object' && 'path' in request.params
+        ? String(request.params.path)
+        : undefined;
+    const pathname =
+      capturedPath !== undefined ? '/' + capturedPath : new URL(request.url).pathname;
 
     // Resolve safe path (prevents directory traversal)
     const filePath = resolveSafePath(root, pathname);
@@ -179,7 +188,6 @@ export function createStaticHandler(
       request.headers,
       cacheOptions,
       options.mimeTypes,
-      options.directoryListing ?? false,
     );
 
     if (result) {
@@ -200,7 +208,6 @@ async function tryServeFile(
   headers: Headers,
   cacheOptions: { etag: boolean; lastModified: boolean; maxAge?: number },
   customMimeTypes?: Record<string, string>,
-  directoryListing?: boolean,
 ): Promise<Response | null> {
   try {
     const stats = await stat(filePath);
@@ -217,19 +224,13 @@ async function tryServeFile(
           headers,
           cacheOptions,
           customMimeTypes,
-          false,
         );
         if (indexResult) {
           return indexResult;
         }
       }
 
-      // Directory listing not implemented (would return HTML listing)
-      if (directoryListing) {
-        // Future: implement directory listing
-        return null;
-      }
-
+      // No index file found
       return null;
     }
 
@@ -296,11 +297,20 @@ async function tryServeFile(
       },
     });
   } catch (error) {
-    // File doesn't exist or can't be read
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      return null;
+    // Handle filesystem errors gracefully
+    if (error instanceof Error && 'code' in error) {
+      const code = error.code;
+      // File doesn't exist
+      if (code === 'ENOENT') {
+        return null;
+      }
+      // Permission denied
+      if (code === 'EACCES' || code === 'EPERM') {
+        return new Response('Forbidden', { status: 403 });
+      }
     }
-    // Other errors (permission denied, etc.)
-    throw error;
+    // Other unexpected errors - return 500 instead of throwing
+    console.error('[serve-static] Unexpected error:', error);
+    return new Response('Internal Server Error', { status: 500 });
   }
 }
