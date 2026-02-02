@@ -219,6 +219,13 @@ bunx nx run-many -t <target>      # Run target for all projects
 bunx nx run <project>:<target>    # Run target for specific project
 ```
 
+**Important conventions:**
+
+- **Prefer npm scripts over `nx.targets`**: Define package commands in the `scripts` section of `package.json`, not in `nx.targets`. Nx automatically discovers scripts and runs them with the correct `cwd`. Using `nx.targets` can cause issues with working directory resolution.
+- **Always run package commands via Nx**: Use `bunx nx run <project>:<target>` instead of `cd`-ing into packages and running commands directly. This ensures proper caching, dependency ordering, and consistent behavior.
+
+**Flaky task detection**: Nx Cloud provides automatic flaky task detection and re-running. This requires connecting to Nx Cloud (`npx nx@latest connect`) and using distributed task execution (Nx Agents). Without Nx Cloud, flaky tests must be debugged manually by ensuring tests are properly scoped to their package directory.
+
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
 
