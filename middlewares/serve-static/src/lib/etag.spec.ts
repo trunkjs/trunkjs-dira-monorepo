@@ -10,8 +10,8 @@ describe('generateEtag', () => {
   it('encodes mtime and size in hex', () => {
     // 1704067200000 in hex = 18cc251f400
     const size = 0x400; // 1024 in hex
-    const etag = generateEtag(1704067200000, 1024);
-    expect(etag).toBe(`W/"${(1704067200000).toString(16)}-400"`);
+    const etag = generateEtag(1704067200000, size);
+    expect(etag).toBe(`W/"${(1704067200000).toString(16)}-${size.toString(16)}"`);
   });
 
   it('truncates fractional milliseconds', () => {
