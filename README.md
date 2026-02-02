@@ -268,7 +268,3 @@ This monorepo uses a **single version policy**:
 # Auto-fix missing dependencies in libraries
 bunx eslint libs/*/package.json --fix
 ```
-
-## License
-
-MIT
