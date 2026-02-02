@@ -168,11 +168,15 @@ export function createStaticHandler(
     // Use captured wildcard path if available (e.g., from /::path or /static/::path)
     // Otherwise fall back to the full URL pathname
     const capturedPath =
-      request.params && typeof request.params === 'object' && 'path' in request.params
+      request.params &&
+      typeof request.params === 'object' &&
+      'path' in request.params
         ? String(request.params.path)
         : undefined;
     const pathname =
-      capturedPath !== undefined ? '/' + capturedPath : new URL(request.url).pathname;
+      capturedPath !== undefined
+        ? '/' + capturedPath
+        : new URL(request.url).pathname;
 
     // Resolve safe path (prevents directory traversal)
     const filePath = resolveSafePath(root, pathname);

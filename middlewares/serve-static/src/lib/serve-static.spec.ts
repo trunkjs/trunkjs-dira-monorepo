@@ -3,7 +3,11 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveStatic, createStaticHandler } from './serve-static';
-import type { DiraMiddleware, MiddlewareNext, DiraHttpRequest } from '@dira/core';
+import type {
+  DiraMiddleware,
+  MiddlewareNext,
+  DiraHttpRequest,
+} from '@dira/core';
 
 // Helper to create a mock request
 function createMockRequest(
@@ -277,12 +281,12 @@ describe('serveStatic', () => {
         cache: { etag: false, lastModified: true },
       });
 
-      // First request to get Last-Modified
+      // First request to verify Last-Modified header exists
       const first = await invokeMiddleware(
         middleware,
         createMockRequest('/style.css'),
       );
-      const lastModified = first.headers.get('Last-Modified')!;
+      expect(first.headers.get('Last-Modified')).toBeTruthy();
 
       // Second request with If-Modified-Since (future date)
       const futureDate = new Date(Date.now() + 86400000).toUTCString();
@@ -445,7 +449,12 @@ describe('createStaticHandler', () => {
       const handler = createStaticHandler({ root: testDir });
       // Simulate /static/::path route with request to /static/assets/app.js
       const response = await handler(
-        createMockDiraRequest('/static/assets/app.js', 'GET', {}, { path: 'assets/app.js' }),
+        createMockDiraRequest(
+          '/static/assets/app.js',
+          'GET',
+          {},
+          { path: 'assets/app.js' },
+        ),
       );
 
       expect(response.status).toBe(200);
@@ -492,14 +501,18 @@ describe('createStaticHandler', () => {
 
     it('returns 405 for POST without fallthrough', async () => {
       const handler = createStaticHandler({ root: testDir });
-      const response = await handler(createMockDiraRequest('/style.css', 'POST'));
+      const response = await handler(
+        createMockDiraRequest('/style.css', 'POST'),
+      );
 
       expect(response.status).toBe(405);
     });
 
     it('returns empty 404 for POST with fallthrough', async () => {
       const handler = createStaticHandler({ root: testDir, fallthrough: true });
-      const response = await handler(createMockDiraRequest('/style.css', 'POST'));
+      const response = await handler(
+        createMockDiraRequest('/style.css', 'POST'),
+      );
 
       expect(response.status).toBe(404);
       expect(await response.text()).toBe('');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { resolve, sep } from 'node:path';
+import { resolve } from 'node:path';
 import { resolveSafePath } from './resolve-safe-path';
 
 describe('resolveSafePath', () => {
