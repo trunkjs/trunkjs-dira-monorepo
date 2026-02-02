@@ -105,6 +105,72 @@ graph TB
 | `@dira/adapter-bun` | Native Bun.serve() adapter with middleware bridge |
 | `@dira/codegen` | TypeScript client SDK generator |
 
+### Middlewares
+
+| Package | Description |
+|---------|-------------|
+| `@dira/serve-static` | Static file serving with caching, ETags, and security |
+
+#### Static File Serving
+
+The `@dira/serve-static` package provides two patterns for serving static files:
+
+**Pattern 1: Handler (Recommended)** - Register as a catch-all route after API routes:
+
+```typescript
+import { createStaticHandler } from '@dira/serve-static';
+
+const dira = new DiraCore()
+  // Register API routes first (more specific)
+  .registerController(new ApiController())
+  // Serve static files as catch-all (must be AFTER specific routes)
+  .registerHandler(
+    '/::path',
+    createStaticHandler({
+      root: './public',
+      index: ['index.html'],
+      cache: { maxAge: 3600 },
+    }),
+    { method: 'get', name: 'static' },
+  );
+```
+
+You can also serve files under a prefix:
+
+```typescript
+// Serve files at /static/* from ./public
+dira.registerHandler(
+  '/static/::path',
+  createStaticHandler({ root: './public' }),
+  { method: 'get', name: 'static' },
+);
+```
+
+**Pattern 2: Middleware** - Runs on all routes with prefix filtering:
+
+```typescript
+import { serveStatic } from '@dira/serve-static';
+
+const dira = new DiraCore()
+  // Middleware runs before route matching
+  .use(serveStatic({
+    root: './public',
+    prefix: '/static',  // Only serve files under /static/*
+    fallthrough: true,  // Pass to next handler if file not found
+  }))
+  .registerController(new ApiController());
+```
+
+**When to use each pattern:**
+- **Handler pattern**: Best for SPAs and typical web apps where static files are a fallback
+- **Middleware pattern**: Best when you need static files checked before any route matching
+
+Features:
+- Automatic MIME type detection with custom override support
+- ETag and Last-Modified caching with 304 responses
+- Path traversal protection (null bytes, encoded sequences)
+- Index file serving for directories
+
 ## Request Flow
 
 ```mermaid
@@ -241,6 +307,7 @@ const user = await api.users.getUser.$get({ params: { id: '123' } });
 | `04-full-app` | Production-like app with codegen, middleware, and e2e tests |
 | `05-adapter-agnostic` | Same app running on both Hono and Bun adapters |
 | `06-middleware` | Advanced middleware patterns with typed context |
+| `07-static-files` | Static file serving with API and e2e tests |
 
 Run any demo:
 

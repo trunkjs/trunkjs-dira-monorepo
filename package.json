@@ -4,9 +4,11 @@
   "private": true,
   "workspaces": [
     "libs/*",
+    "middlewares/*",
     "demos/*"
   ],
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@nx/esbuild": "22.4.2",
     "@nx/eslint": "22.4.2",
     "@nx/eslint-plugin": "^22.4.2",

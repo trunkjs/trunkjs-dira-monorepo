@@ -95,13 +95,15 @@ export class BunAdapter implements DiraAdapter {
         continue;
       }
 
-      // Check method restrictions
+      // Check method restrictions (case-insensitive comparison)
       if (route.methods && route.methods.length > 0) {
-        if (!route.methods.includes(method)) {
+        const methodUpper = method.toUpperCase();
+        const allowedMethods = route.methods.map((m) => m.toUpperCase());
+        if (!allowedMethods.includes(methodUpper)) {
           // Method not allowed - return 405 with Allow header
           return new Response(null, {
             status: 405,
-            headers: { Allow: route.methods.join(', ') },
+            headers: { Allow: allowedMethods.join(', ') },
           });
         }
       }
