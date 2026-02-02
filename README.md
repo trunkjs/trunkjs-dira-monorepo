@@ -40,9 +40,9 @@ dira.run(new HonoAdapter());
 ```mermaid
 graph TB
     subgraph "Application Layer"
-        C[Controllers<br/>@DiraController + @DiraHttp]
-        M[Middleware<br/>@UseMiddleware]
-        S[Services<br/>@Injectable + @Inject]
+        C["Controllers<br/>@DiraController + @DiraHttp"]
+        M["Middleware<br/>@UseMiddleware"]
+        S["Services<br/>@Injectable + @Inject"]
     end
 
     subgraph "@dira/core"
