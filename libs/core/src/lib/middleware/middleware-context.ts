@@ -44,20 +44,32 @@ export function attachContext<TRequest extends object, TContext>(
   const ctxProxy = new Proxy(
     {},
     {
-      get(_target, prop: string) {
+      get(_target, prop: string | symbol) {
+        if (typeof prop === 'symbol') {
+          return undefined;
+        }
         return store.get(prop);
       },
-      set(_target, prop: string, value: unknown) {
+      set(_target, prop: string | symbol, value: unknown) {
+        if (typeof prop === 'symbol') {
+          return false;
+        }
         store.set(prop, value);
         return true;
       },
-      has(_target, prop: string) {
+      has(_target, prop: string | symbol) {
+        if (typeof prop === 'symbol') {
+          return false;
+        }
         return store.has(prop);
       },
       ownKeys() {
         return Object.keys(store.getAll());
       },
-      getOwnPropertyDescriptor(_target, prop: string) {
+      getOwnPropertyDescriptor(_target, prop: string | symbol) {
+        if (typeof prop === 'symbol') {
+          return undefined;
+        }
         if (store.has(prop)) {
           return {
             value: store.get(prop),
