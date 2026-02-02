@@ -54,8 +54,8 @@ graph TB
 
     subgraph "@dira/di"
         DI[DiContainer]
-        INJ[@Injectable / @Inject]
-        CACHE[@Cached]
+        INJ["@Injectable / @Inject"]
+        CACHE["@Cached"]
     end
 
     subgraph "Adapters"
@@ -82,7 +82,7 @@ graph TB
 
     C -.-> AST
     AST --> GEN
-    GEN -.-> |"Generated Client"| CLIENT[api.controller.method.$get]
+    GEN -.-> |"Generated Client"| CLIENT["api.controller.method.$get()"]
 
     style C fill:#e1f5fe
     style M fill:#fff3e0
