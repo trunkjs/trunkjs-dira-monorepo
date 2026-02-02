@@ -89,7 +89,7 @@ export function analyzeHandlerProperty(
 }
 
 /**
- * Extracts body, query, and return types from a method with a `DiraRequest<TBody, TQuery>` parameter.
+ * Extracts body, query, and return types from a method with a `DiraHttpRequest<TBody, TQuery>` parameter.
  */
 export function analyzeMethodDeclaration(
   member: ts.MethodDeclaration,
@@ -108,7 +108,7 @@ export function analyzeMethodDeclaration(
       const typeName = param.type.typeName;
       const name = ts.isIdentifier(typeName) ? typeName.text : '';
 
-      if (name === 'DiraRequest' && param.type.typeArguments) {
+      if ((name === 'DiraRequest' || name === 'DiraHttpRequest') && param.type.typeArguments) {
         const typeArgs = param.type.typeArguments;
         if (typeArgs.length >= 1) {
           const bodyTsType = checker.getTypeFromTypeNode(typeArgs[0]);

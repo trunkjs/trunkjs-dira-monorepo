@@ -1,5 +1,5 @@
 import { DiraController, DiraHttp, handler } from '@dira/core';
-import type { DiraRequest } from '@dira/core';
+import type { DiraHttpRequest } from '@dira/core';
 
 interface CreateItemBody {
   name: string;
@@ -14,13 +14,13 @@ interface SearchQuery {
 @DiraController('/items', { name: 'items' })
 export class ItemsController {
   @DiraHttp('/create', { method: 'POST' })
-  async createItem(req: DiraRequest<CreateItemBody>) {
+  async createItem(req: DiraHttpRequest<CreateItemBody>) {
     const body = await req.json();
     return { id: '1', name: body.name, value: body.value };
   }
 
   @DiraHttp('/', { method: 'GET' })
-  listItems(_req: DiraRequest) {
+  listItems(_req: DiraHttpRequest) {
     return { items: [] as string[] };
   }
 
@@ -36,7 +36,7 @@ export class ItemsController {
   });
 
   @DiraHttp('/search', { method: 'GET' })
-  search(req: DiraRequest<unknown, SearchQuery>) {
+  search(req: DiraHttpRequest<unknown, SearchQuery>) {
     return { query: req.query.q, results: [] as string[] };
   }
 
@@ -46,7 +46,7 @@ export class ItemsController {
   });
 
   @DiraHttp('/status', { method: 'GET', name: 'get-status' })
-  getStatus(_req: DiraRequest) {
+  getStatus(_req: DiraHttpRequest) {
     return { status: 'ok' };
   }
 }

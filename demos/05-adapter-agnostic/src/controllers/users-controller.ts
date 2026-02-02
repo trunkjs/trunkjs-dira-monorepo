@@ -1,4 +1,4 @@
-import { DiraController, DiraHttp, type DiraRequest } from '@dira/core';
+import { DiraController, DiraHttp, type DiraHttpRequest } from '@dira/core';
 
 interface User {
   id: string;
@@ -20,7 +20,7 @@ export class UsersController {
 
   @DiraHttp('/:id', { method: 'GET' })
   getById(
-    req: DiraRequest<unknown, unknown, { id: string }>,
+    req: DiraHttpRequest<unknown, unknown, { id: string }>,
   ): User | { error: string } {
     const user = users[req.params.id];
     if (!user) {
@@ -31,7 +31,7 @@ export class UsersController {
 
   @DiraHttp('/:userId/posts/:postId', { method: 'GET' })
   getUserPost(
-    req: DiraRequest<unknown, unknown, { userId: string; postId: string }>,
+    req: DiraHttpRequest<unknown, unknown, { userId: string; postId: string }>,
   ): { userId: string; postId: string } {
     return { userId: req.params.userId, postId: req.params.postId };
   }

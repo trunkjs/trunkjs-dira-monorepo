@@ -1,9 +1,9 @@
-import { DiraController, DiraHttp, type DiraRequest } from '@dira/core';
+import { DiraController, DiraHttp, type DiraHttpRequest } from '@dira/core';
 
 @DiraController('/files')
 export class FilesController {
   @DiraHttp('/::path', { method: 'GET' })
-  getFile(req: DiraRequest<unknown, unknown, { path: string }>): {
+  getFile(req: DiraHttpRequest<unknown, unknown, { path: string }>): {
     path: string;
     found: boolean;
   } {

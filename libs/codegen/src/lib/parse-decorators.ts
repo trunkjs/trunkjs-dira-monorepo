@@ -56,7 +56,7 @@ export function getControllerDecorator(
 export function getHttpDecorator(
   member: ts.ClassElement,
 ): HttpDecoratorInfo | undefined {
-  const decorators = ts.getDecorators(member);
+  const decorators = ts.getDecorators(member as ts.HasDecorators);
   if (!decorators) return undefined;
 
   for (const dec of decorators) {

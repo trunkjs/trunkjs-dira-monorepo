@@ -46,14 +46,13 @@ export class HonoMiddlewareBridge implements MiddlewareBridge<HonoMiddleware> {
           header: (name: string) => req.headers.get(name),
           headers: req.headers,
         },
-        res: undefined as Response | undefined,
+        get res() {
+          return response;
+        },
         set: {
           res: (r: Response) => {
             response = r;
           },
-        },
-        get res() {
-          return response;
         },
         body: (data: unknown, status?: number) =>
           new Response(JSON.stringify(data), { status: status ?? 200 }),

@@ -67,8 +67,8 @@ export class BunAdapter implements DiraAdapter {
       fetch: (request) => this.handleRequest(request),
     });
 
-    const actualPort = this.server.port;
-    const actualHostname = this.server.hostname;
+    const actualPort = this.server.port ?? port;
+    const actualHostname = this.server.hostname ?? hostname;
 
     console.log(`Server running at http://${actualHostname}:${actualPort}`);
 
