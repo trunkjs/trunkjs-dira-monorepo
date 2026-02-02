@@ -107,42 +107,31 @@ graph TB
 
 ## Request Flow
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           HTTP Request                                  │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Adapter (Hono / Bun)                               │
-│                   Route matching & parameter extraction                 │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     DiraHttpRequest Created                             │
-│              (extends DiContainer for DI support)                       │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Middleware Pipeline                                │
-│  ┌─────────────┐   ┌──────────────────┐   ┌───────────────────┐        │
-│  │   Global    │ → │   Controller     │ → │      Method       │        │
-│  │ Middleware  │   │   Middleware     │   │    Middleware     │        │
-│  └─────────────┘   └──────────────────┘   └───────────────────┘        │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Route Handler                                   │
-│           (with typed req.params, req.query, req.body)                  │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        HTTP Response                                    │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    REQ([HTTP Request])
+    ADAPT["Adapter (Hono / Bun)<br/>Route matching & parameter extraction"]
+    DIREQ["DiraHttpRequest Created<br/>extends DiContainer for DI support"]
+
+    subgraph MW["Middleware Pipeline"]
+        direction LR
+        GM[Global] --> CM[Controller] --> MM[Method]
+    end
+
+    HANDLER["Route Handler<br/>typed req.params, req.query, req.body"]
+    RES([HTTP Response])
+
+    REQ --> ADAPT
+    ADAPT --> DIREQ
+    DIREQ --> GM
+    MM --> HANDLER
+    HANDLER --> RES
+
+    style REQ fill:#e8f5e9
+    style RES fill:#ffebee
+    style ADAPT fill:#fff3e0
+    style DIREQ fill:#e3f2fd
+    style HANDLER fill:#f3e5f5
 ```
 
 ## Examples
